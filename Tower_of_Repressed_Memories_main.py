@@ -10,20 +10,19 @@
           1. Implement core game variables (anxiety, paranoia, focus, timer, scoring, adrenaline)
              TODO: math for focus, Timer influnece on anxiety/paranoia, NKE influence on adrenaline
              --- IN PROGRESS ---
-          2. HUD (TODO: add anxiety, paranoia to screen; show high score at end screen)
-             --- IN PROGRESS ---
-          3. Figure out collision with distinct enemies in Group!
+          2. Figure out collision with distinct enemies in Group!
              TODO: if can't get to work, remove enemies from Group and do individual collision detection
-          4. Implement nonkillable enemy class (why not moving??) (TODO: get to work first, then move with Timer)
-          5. Restart current level on death
-          6. Write score to high_score and create High Score variable (end screen)
-          7. TEST all functionality in test level.
+          3. Implement nonkillable enemy class (why not moving??) (TODO: get to work first, then move with Timer)
+          4. Restart current level on death
+          5. Write score to high_score and create High Score variable (end screen)
+          6. TEST all functionality in test level.
              Create Level 1 layout / add enemies and items / loop music
-          8. Add background images and v. parallax
-          9. Add fall damage
-         10. Add teleportation ability for Stalkers
-         11. Continue with other levels
-         12. To-do list above
+          7. Add background images and v. parallax
+          8. Add fall damage
+          9. Add teleportation ability for Stalkers
+         10. Continue with other levels
+         11. To-do list above
+         12. Display actual hearts for Hearts (instead of numbers)
          13. Save points?
          14. Add animated sprites (improved sprites) if time allows
 '''
@@ -113,11 +112,11 @@ BRIGHT_GREEN = (0, 200, 0)
 STORMY_BLUE =  (114, 144, 169)
 
 # Fonts
-font_xs = load_font("assets/fonts/ToThePointRegular-n9y4.ttf", 16)
-font_sm = load_font("assets/fonts/ToThePointRegular-n9y4.ttf", 32)
-font_md = load_font("assets/fonts/ToThePointRegular-n9y4.ttf", 48)
-font_lg = load_font("assets/fonts/ToThePointRegular-n9y4.ttf", 64)
-font_xl = load_font("assets/fonts/TheConfessionRegular-YBpv.ttf", 80)
+font_xs = load_font("assets/fonts/TheConfessionRegular-YBpv.ttf", 16)
+font_sm = load_font("assets/fonts/TheConfessionRegular-YBpv.ttf", 32)
+font_md = load_font("assets/fonts/TheConfessionRegular-YBpv.ttf", 48)
+font_lg = load_font("assets/fonts/TheConfessionRegular-YBpv.ttf", 64)
+font_xl = load_font("assets/fonts/ToThePointRegular-n9y4.ttf", 80)
 
 # Sounds
 gem_snd = load_sound('assets/sounds/gem.ogg')
@@ -1062,9 +1061,12 @@ class Game():
 
     ''' HUD information '''
     def show_stats(self):
+        # Define number of pixels to evenly space the elements on the screen
+        spacing = SCREEN_WIDTH / 7
+
         level_str = "Level: " + str(self.current_level)
         
-        text1 = font_md.render(level_str, 1, YELLOW, pygame.SRCALPHA)
+        text1 = font_sm.render(level_str, 1, YELLOW, pygame.SRCALPHA)
         rect1 = text1.get_rect()
         rect1.left = 24
         rect1.top = 24
@@ -1072,22 +1074,51 @@ class Game():
     
         score_str = "Score: " + str(self.player.score)
         
-        text2 = font_md.render(score_str, 1, YELLOW, pygame.SRCALPHA)
+        text2 = font_sm.render(score_str, 1, YELLOW, pygame.SRCALPHA)
         rect2 = text2.get_rect()
-        rect2.right = (SCREEN_WIDTH / 2)
-        rect2.top = 24
+        rect2.left = 24
+        rect2.top = rect1.bottom + 10
         screen.blit(text2, rect2)
 
         timer_str = "Time: " + str(self.timer)
         
-        text3 = font_md.render(timer_str, 1, YELLOW, pygame.SRCALPHA)
+        text3 = font_sm.render(timer_str, 1, YELLOW, pygame.SRCALPHA)
         rect3 = text3.get_rect()
-        rect3.right = SCREEN_WIDTH - 23
+        rect3.right = SCREEN_WIDTH - 24
         rect3.top = 24
         screen.blit(text3, rect3)
 
-        # TODO: continue with displaying variables...
-        #...
+        anxiety_str = "Anxiety: " + str(self.player.anxiety)
+
+        text4 = font_sm.render(anxiety_str, 1, YELLOW, pygame.SRCALPHA)
+        rect4 = text4.get_rect()
+        rect4.left = (spacing * 3) - (rect4.width / 2)
+        rect4.top = 24
+        screen.blit(text4, rect4)
+
+        paranoia_str = "Paranoia: " + str(self.player.paranoia)
+
+        text5 = font_sm.render(paranoia_str, 1, YELLOW, pygame.SRCALPHA)
+        rect5 = text5.get_rect()
+        rect5.left = (spacing * 4) - (rect5.width / 2)
+        rect5.top = 24
+        screen.blit(text5, rect5)
+
+        focus_str = "Focus: " + str(self.player.focus)
+
+        text6 = font_sm.render(focus_str, 1, YELLOW, pygame.SRCALPHA)
+        rect6 = text6.get_rect()
+        rect6.left = (spacing * 5) - (rect6.width / 2)
+        rect6.top = 24
+        screen.blit(text6, rect6)
+
+        hearts_str = "Hearts: " + str(self.player.hearts)
+
+        text7 = font_sm.render(hearts_str, 1, YELLOW, pygame.SRCALPHA)
+        rect7 = text7.get_rect()
+        rect7.left = (spacing * 2) - (rect7.width / 2)
+        rect7.top = 24
+        screen.blit(text7, rect7)
                    
     ''' Calculation for moving tiles based on Player position '''
     def calculate_offset(self):
