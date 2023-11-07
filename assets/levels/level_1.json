@@ -1,0 +1,90 @@
+{
+	"layout": {
+		"scale": 64,
+		"size": [20, 64],
+		"start": [1, 60],
+		"goal": [17, 2, 1, 1]
+	},
+
+	"physics": {
+		"gravity": 1.8,
+		"terminal_velocity": 30
+	},
+
+	"timer": {
+		"time": 120
+	},
+
+	"music": "assets/music/Tower_Of_Repression_main_1.ogg",
+
+	"background": {
+		"color": [20, 62, 61],
+		"image1": "assets/images/backgrounds/Sky.png",
+		"image2": "assets/images/backgrounds/Hills_2.png",
+		"parallax_speed1": 0.6,
+		"parallax_speed2": 0.3
+	},
+
+	"tiles": {
+		"midground": [
+			[17, 2, "Door"]
+		],
+
+		"main": [
+			[0, 61, "Platform"],
+			[1, 61, "Platform"],
+			[2, 61, "Platform"],
+			[3, 61, "Platform"],
+			[4, 61, "Platform"],
+			[5, 61, "Platform"],
+			[6, 61, "Platform"],
+			[7, 61, "Platform"],
+			[8, 61, "Platform"],
+			[14, 61, "Platform"],
+			[15, 61, "Platform"],
+			[16, 61, "Platform"],
+			[17, 61, "Platform"],
+			[18, 61, "Platform"],
+			[19, 61, "Platform"],
+			[20, 61, "Platform"],
+
+			[10, 59, "Platform"],
+			[11, 59, "Platform"],
+			[12, 59, "Platform"]
+		],
+
+		"foreground": [
+			[0, 63, "Lava"],
+			[1, 63, "Lava"],
+			[2, 63, "Lava"],
+			[3, 63, "Lava"],
+			[4, 63, "Lava"],
+			[5, 63, "Lava"],
+			[6, 63, "Lava"],
+			[7, 63, "Lava"],
+			[8, 63, "Lava"],
+			[9, 63, "Lava"],
+			[10, 63, "Lava"],
+			[11, 63, "Lava"],
+			[12, 63, "Lava"],
+			[13, 63, "Lava"],
+			[14, 63, "Lava"],
+			[15, 63, "Lava"],
+			[16, 63, "Lava"],
+			[17, 63, "Lava"],
+			[18, 63, "Lava"],
+			[19, 63, "Lava"],
+			[20, 63, "Lava"]
+		]
+	},
+
+	"items": [
+
+	],
+
+	"enemies": [
+		[11, 58, "MindSlime"],
+		[7, 60, "Terror"],
+		[15, 60, "Stalker"]
+	]
+}
