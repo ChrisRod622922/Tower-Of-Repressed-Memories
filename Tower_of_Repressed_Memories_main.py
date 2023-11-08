@@ -325,10 +325,6 @@ class Player(pygame.sprite.Sprite):
 
         for hit in hit_list:
             # Assign item's score value to Player score and other effects
-            self.score += hit.score_value
-            self.hearts += hit.heart_value
-            self.anxiety += hit.anxiety_value
-            self.paranoia += hit.paranoia_value
             hit.apply(self)
 
     # Enemy collision detection
@@ -713,7 +709,10 @@ class Gem(pygame.sprite.Sprite):
 
     def apply(self, player):
         gem_snd.play()
-        player.score += self.value
+        player.score += self.score_value
+        player.hearts += self.heart_value
+        player.anxiety += self.anxiety_value
+        player.paranoia += self.paranoia_value
         
     def update(self, level):
         ''' No animation, so nothing needs to be updated '''
