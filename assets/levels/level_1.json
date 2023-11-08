@@ -85,6 +85,8 @@
 	"enemies": [
 		[11, 58, "MindSlime"],
 		[7, 60, "Terror"],
-		[15, 60, "Stalker"]
+		[15, 60, "Stalker"],
+		[0, 64, "Rising_Lava"],
+		[0, 64, "NK_Hitbox"]
 	]
 }

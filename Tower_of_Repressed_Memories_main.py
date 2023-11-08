@@ -4,27 +4,26 @@
           - Add menu option to toggle fullscreen mode
           - ALL SPRITES/TILES ARE TEMPORARY: Replace sprites, fonts and sounds eventually
           - Separate class modules into their own files
+          - Game class needs more code moved to dedicated functions!!
 '''
 
 ''' TODO:
           1. Implement core game variables (anxiety, paranoia, focus, timer, scoring, adrenaline)
-             TODO: math for focus, Timer influnece on anxiety/paranoia, NKE influence on adrenaline
+             TODO: variable conditions
              --- IN PROGRESS ---
-          2. Figure out collision with distinct enemies in Group!
-             TODO: if can't get to work, remove enemies from Group and do individual collision detection
-          3. Implement nonkillable enemy class (why not moving??) (TODO: get to work first, then move with Timer)
-          4. Restart current level on death
-          5. Write score to high_score and create High Score variable (end screen)
+          2. Nonkillable enemies need to move in proportion to Timer
+          3. Restart current level on death
+          4. Write score to high_score and create High Score variable (end screen)
+          5. Add teleportation ability for Stalkers
           6. TEST all functionality in test level.
              Create Level 1 layout / add enemies and items / loop music
           7. Add background images and v. parallax
           8. Add fall damage
-          9. Add teleportation ability for Stalkers
-         10. Continue with other levels
-         11. To-do list above
-         12. Display actual hearts for Hearts (instead of numbers)
-         13. Save points?
-         14. Add animated sprites (improved sprites) if time allows
+          9. Continue with other levels
+         10. To-do list above
+         11. Display actual hearts for Hearts (instead of numbers)
+         12. Save points?
+         13. Add animated sprites (improved sprites) if time allows
 '''
 
 ''' TODO: LEVELS (planning):
@@ -162,9 +161,7 @@ terror_enemy_images = [ load_image('assets/images/enemy/platformPack_tile011a.pn
 stalker_enemy_images = [ load_image('assets/images/enemy/platformPack_tile044.png'),
                           load_image('assets/images/enemy/platformPack_tile044.png') ]
 
-nonkillable_enemy_images = load_image('assets/images/enemy/Lava.png')
-
-spike_enemy_images = [ load_image('assets/images/enemy/platformPack_tile043.png') ]
+nonkillable_enemy_images = [ load_image('assets/images/enemy/Lava.png') ]
 
 item_images = { "Gem": load_image('assets/images/item/platformPack_item008.png'),
                 "Stress_Ball": load_image('assets/images/item/platformPack_item010.png'),
@@ -206,12 +203,14 @@ class Player(pygame.sprite.Sprite):
         self.inverse = False
 
         self.hearts = 5
+
+        self.adrenaline_timer = 0
         self.hurt_timer = 0
 
         self.anxiety = 0 #max=100
         self.paranoia = 0 #max=100
         self.focus = 100
-        self.adrenaline = 0 #max=5
+        self.adrenaline = 0
     
         self.reached_goal = False
         self.score = 0
@@ -273,6 +272,15 @@ class Player(pygame.sprite.Sprite):
         if self.vy > level.terminal_velocity:
             self.vy = level.terminal_velocity
 
+    def adrenaline_cooldown(self):
+        if self.adrenaline_timer > 0:
+            self.adrenaline_timer -= 1
+        else:
+            self.speed += self.adrenaline
+            self.adrenaline_timer = (FPS * 2)
+            self.adrenaline = 0
+            
+
     # Movement and tile collision detection
     def move_and_check_tiles(self, level):
         if self.inverse == False:
@@ -332,43 +340,11 @@ class Player(pygame.sprite.Sprite):
         if self.hurt_timer > 0:
             self.hurt_timer -= 1
         else:
-            MS_group = pygame.sprite.Group([s for s in level.enemies if s == MindSlimeEnemy])
-            hit_list_MS = pygame.sprite.spritecollide(self, MS_group, False)
-
-            for hit in hit_list_MS:
-                self.hearts -= 2
-                self.hurt_timer = 30
-            
-            # TODO: distinct collision detection from SpriteGroup???
-            '''
-            for i in range(0, len(level.enemies)):
-                enemy = level.enemies.sprites()[i]
-                # TODO: NK enemy not working (see Class function)
-                if enemy == MindSlimeEnemy:
-                    #hit_list_NK = pygame.sprite.spritecollide(self, enemy, False)
-                    if pygame.sprite.spritecollide(self, enemy, False):
-                        self.hearts -= 2
-                        self.hurt_timer = 30
-                i += 1
-            
-            hit_list_MS = pygame.sprite.spritecollide(self, level.enemies["MindSlime"], False)
-            hit_list_T = pygame.sprite.spritecollide(self, level.enemies["Terror"], False)
-            hit_list_S = pygame.sprite.spritecollide(self, level.enemies["Stalker"], False)
-            #hit_list_SP = pygame.sprite.spritecollide(self, level.enemies["Spike"], False)
-         
-            for hit in hit_list_NK:
-                self.hearts = 0
-                self.hurt_timer = 30
-            for hit in hit_list_MS:
-                self.hearts -= 2
-                self.hurt_timer = 30
-            for hit in hit_list_T:
-                self.hearts -= 1
-                self.hurt_timer = 30
-            for hit in hit_list_S:
-                self.hearts -= 2
-                self.hurt_timer = 30
-            '''
+            hit_list = pygame.sprite.spritecollide(self, level.enemies, False)
+            for hit in hit_list:
+                # Use same logic as items for individual collision. Ensures correct num of hearts is deduced
+                hit.apply(self)
+                self.hurt_timer = FPS
     
     # Screen edges collision detection
     def check_world_edges(self, level):
@@ -409,6 +385,7 @@ class Player(pygame.sprite.Sprite):
             
     def update(self, level):
         self.apply_gravity(level)
+        self.adrenaline_cooldown()
         self.move_and_check_tiles(level)
         self.check_world_edges(level)
         self.process_items(level)
@@ -439,6 +416,20 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
         self.steps = 0
         self.step_rate = 6
         self.walk_index = 0
+
+        self.score_value = -10
+        self.heart_value = -2
+        self.anxiety_value = 5
+        self.paranoia_value = 0
+        self.adrenaline_value = 0
+
+    # Apply negative effects to Player upon collision (such as -Hearts)
+    def apply(self, player):
+        player.score += self.score_value
+        player.hearts += self.heart_value
+        player.anxiety += self.anxiety_value
+        player.paranoia += self.paranoia_value
+        player.adrenaline += self.adrenaline_value
         
     def reverse(self):
         self.vx = -1 * self.vx
@@ -519,6 +510,12 @@ class TerrorEnemy(MindSlimeEnemy):
     def __init__(self, x, y, images):
         super().__init__(x, y, images)
 
+        self.score_value = -10
+        self.heart_value = -1
+        self.anxiety_value = 5
+        self.paranoia_value = 0
+        self.adrenaline_value = 0
+
     ''' Override this function '''
     def move_and_check_tiles(self, level):
         #reverse = False
@@ -577,6 +574,12 @@ class StalkerEnemy(TerrorEnemy):
         self.step_rate = 6
         self.walk_index = 0
 
+        self.score_value = -10
+        self.heart_value = -2
+        self.anxiety_value = 5
+        self.paranoia_value = 5
+        self.adrenaline_value = 0
+
     # Prevent clipping
     def can_jump(self, tiles):
         self.rect.y += 2
@@ -610,37 +613,10 @@ class StalkerEnemy(TerrorEnemy):
         self.set_image()
 
 
-class NonkillableEnemy(pygame.sprite.Sprite):
+class RisingLava(pygame.sprite.Sprite):
     '''
     Non-killable enemy. Moves up as the Timer depletes.
     '''
-    def __init__(self, x, y, images):
-        super().__init__()
-
-        self.image = images
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-
-        # TODO: speed should be proportional to time left on Timers
-        self.vy = 2
-
-        self.steps = 0
-        self.step_rate = 1
-        self.walk_index = 0
-
-    def move(self):
-        self.rect.y -= self.vy
-
-    def update(self):
-        self.move.update(self)
-    
-
-class SpikeEnemy(pygame.sprite.Sprite):
-    ''' 
-    This enemy just falls because it represents falling spikes.
-    '''
-    
     def __init__(self, x, y, images):
         super().__init__()
 
@@ -650,46 +626,69 @@ class SpikeEnemy(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-        self.vy = 0
+        # TODO: speed should be proportional to time left on Timers
+        self.vy = 1
 
         self.steps = 0
         self.step_rate = 1
         self.walk_index = 0
 
-    def move_and_check_tiles(self, level):
-        # Only vertical direction needs to be checked
-        self.rect.y += self.vy
-        hit_list = pygame.sprite.spritecollide(self, level.main_tiles, False)
+        self.score_value = 0
+        self.heart_value = -999
+        self.anxiety_value = 0
+        self.paranoia_value = 0
+        self.adrenaline_value = 0
 
-        for hit in hit_list:
-            if self.vy > 0:
-                self.rect.bottom = hit.rect.top
-            elif self.vy < 0:
-                self.rect.top = hit.rect.bottom
-
-            self.vy = 0
-
-    def apply_gravity(self, level):
-        self.vy += level.gravity
-
-        if self.vy > level.terminal_velocity:
-            self.vy = level.terminal_velocity
-
-    def step(self):
-        self.steps = (self.steps + 1) % self.step_rate
-
-        if self.steps == 0:
-            self.walk_index = (self.walk_index + 1) % len(self.images)
+    # Apply negative effects to Player upon collision (such as -Hearts)
+    def apply(self, player):
+        player.score += self.score_value
+        player.hearts += self.heart_value
+        player.anxiety += self.anxiety_value
+        player.paranoia += self.paranoia_value
+        player.adrenaline += self.adrenaline_value
+    
+    def move(self, level):
+        self.rect.y -= self.vy
 
     def set_image(self):
-        self.image = self.images[self.walk_index]
-        
+        self.image = self.images[0]
+
     def update(self, level):
-        self.move_and_check_tiles(level)
-        self.apply_gravity(level)
-        self.step()
+        self.move(level)
         self.set_image()
         
+
+class NonkillableEnemyHitbox(RisingLava):
+    '''
+    This class simply provides a rect that the Player can collide with that 
+    is slightly raised or close to a nonkillable enemy type so that adrenaline may increase.
+    '''
+    
+    def __init__(self, x, y, images):
+        super().__init__(x, y, images)
+
+        self.images = images
+        self.image = images[0]
+        self.rect = self.image.get_rect()
+        # TODO: works, but can't cover RisingLava or else no collision
+        self.rect.x = x
+        self.rect.y = y - 50
+
+        self.vy = 1
+
+        self.steps = 0
+        self.step_rate = 1
+        self.walk_index = 0
+
+        self.score_value = 0
+        self.heart_value = 0
+        self.anxiety_value = 0
+        self.paranoia_value = 0
+        self.adrenaline_value = 5
+
+    def set_image(self):
+        pass
+
 
 ''' Items '''
 class Gem(pygame.sprite.Sprite):
@@ -889,8 +888,10 @@ class Level():
                 s = TerrorEnemy(x, y, terror_enemy_images)
             elif kind == "Stalker":
                 s = StalkerEnemy(x, y, stalker_enemy_images)
-            elif kind == "Nonkillable":
-                s = NonkillableEnemy(x, y, nonkillable_enemy_images)
+            elif kind == "Rising_Lava":
+                s = RisingLava(x, y, nonkillable_enemy_images)
+            elif kind == "NK_Hitbox":
+                s = NonkillableEnemyHitbox(x, y, nonkillable_enemy_images)
                 
             self.enemies.add(s)
 
@@ -1041,7 +1042,7 @@ class Game():
         screen.blit(text2, rect2)
 
     def show_lose_screen(self):
-        text = font_lg.render("YOU HAVE DIED.", 1, RED, pygame.SRCALPHA)
+        text = font_lg.render("YOU ARE DEAD.", 1, RED, pygame.SRCALPHA)
         text2 = font_md.render("Press SPACE to play again or ESC to exit.", 1, WHITE, pygame.SRCALPHA)
         rect = text.get_rect()
         rect2 = text2.get_rect()
@@ -1216,18 +1217,25 @@ class Game():
                     self.player.focus = (int)(100 - ((self.player.anxiety / 2) + (self.player.paranoia / 2)))
                 self.timer_count_other = 0
 
-            # Adrenaline condition
-            #
-
             # Conditions for anxiety, paranoia, focus thresholds
-            #
+            # If too high, inverse player controls, create random dummy items, decrease player speed if focus low
+            # ...
+
+            # If any variables are negative, change to 0
+            if self.player.score < 0:
+                self.player.score = 0
+            if self.player.hearts < 0:
+                self.player.hearts = 0
+
+            # Refresh HUD in case any variables were indeed below 0
+            self.show_stats()
 
             # End conditions
             if self.player.reached_goal:
                 stop_music()
                 self.stage = Game.CLEARED
                 self.cleared_timer = self.level_change_delay
-            elif self.player.hearts == 0 or self.timer == 0:
+            elif self.player.hearts <= 0 or self.timer <= 0:
                 self.stage = Game.LOSE
                 lose_snd.play()
                 stop_music()
