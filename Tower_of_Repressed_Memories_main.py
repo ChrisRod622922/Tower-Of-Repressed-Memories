@@ -28,6 +28,7 @@
 '''
 
 ''' TODO: LEVELS (planning):
+          NOTE: map out in Photoshop or other editor where you can use a grid
           1. Escape from rising lava (make non-killable enemy Class and cycle through behaviors;
              e.g. If level = 1, lava() )
           2. Shrinking level (spikes closing in on sides of screen)
@@ -209,7 +210,7 @@ class Player(pygame.sprite.Sprite):
 
         self.anxiety = 0 #max=100
         self.paranoia = 0 #max=100
-        self.focus = 100 #max=100
+        self.focus = 100
         self.adrenaline = 0 #max=5
     
         self.reached_goal = False
@@ -296,7 +297,7 @@ class Player(pygame.sprite.Sprite):
                     self.rect.top = hit.rect.bottom
                 self.vy = 0
                 
-        # If facing left
+        # Reverse movement
         elif self.inverse == True:
             
             self.rect.x -= self.vx
@@ -625,13 +626,13 @@ class NonkillableEnemy(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
+        # TODO: speed should be proportional to time left on Timers
         self.vy = 2
 
         self.steps = 0
         self.step_rate = 1
         self.walk_index = 0
 
-    # TODO: move with Timer
     def move(self):
         self.rect.y -= self.vy
 
@@ -964,7 +965,8 @@ class Game():
         self.level_change_delay = 90
 
         self.timer = 300
-        self.timer_count = 0
+        self.timer_count_time = 0
+        self.timer_count_other = 0
     
     def setup(self):
         self.player = Player(player_images)
@@ -1187,13 +1189,39 @@ class Game():
         if self.stage == Game.PLAYING or self.stage == Game.DEBUG:
             self.active_sprites.update(self.level)
 
-            # Update timer
-            self.timer_count += 1
-            if self.timer > 0 and self.timer_count == FPS:
-                self.timer -= 1
-                self.timer_count = 0
-
             # TODO: Update anxiety, paranoia, focus, adrenaline. Conditions here.
+            ''' RULES: Anxiety & paranoia increase as Timer decreases (try twice as fast),
+                    Focus increases as anxiety & paranoia decreases,
+                    Player speed decreases if focus below a certain threshold,
+                    Adrenaline increases if too close to deadly obstacle,
+                    Player speed increases temporarily by adrenaline amount,
+                    If paranoia past certain threshold, fake objects can randomly appear
+                    (TODO: Create fake class versions of items with no benefits: e.g.
+                        reduce anxiety item will instead increase anxiety and reduce score),
+                    If anxiety past certain threshold, inverse Player controls (Player.inverse)
+            '''
+            # Update timer and player variables
+            self.timer_count_time += 1
+            self.timer_count_other += 1
+            if self.timer > 0 and self.timer_count_time == FPS:
+                self.timer -= 1
+                self.timer_count_time = 0
+
+            if self.timer > 0 and self.timer_count_other == (FPS / 2):
+                #TODO: not proportional to Timer?
+                if self.player.anxiety < 100:
+                    self.player.anxiety += 1
+                if self.player.paranoia < 100:
+                    self.player.paranoia += 1
+                if self.player.focus > 0 and self.player.focus < 101:
+                    self.player.focus = (int)(100 - ((self.player.anxiety / 2) + (self.player.paranoia / 2)))
+                self.timer_count_other = 0
+
+            # Adrenaline condition
+            #
+
+            # Conditions for anxiety, paranoia, focus thresholds
+            #
 
             # End conditions
             if self.player.reached_goal:
