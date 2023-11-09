@@ -674,7 +674,7 @@ class LavaHitbox(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
 
-        self.rect = pygame.Rect(x, (y-50), 1280, 1)
+        self.rect = pygame.Rect(x, (y-60), 1280, 1)
 
         self.vy = 1
 
