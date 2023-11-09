@@ -9,27 +9,28 @@
 
 ''' TODO:
           1. Implement core game variables (anxiety, paranoia, focus, timer, scoring, adrenaline)
-             TODO: variable conditions
+             TODO: variable conditions, fix variables not being proportional to Timer, add screen effects and artifacts
              --- IN PROGRESS ---
-          2. Nonkillable enemies need to move in proportion to Timer
-          3. Restart current level on death
-          4. Write score to high_score and create High Score variable (end screen)
-          5. Add teleportation ability for Stalkers
+          2. Nonkillable enemies (e.g. Lava) need to move in proportion to Timer
+          3. Add teleportation and follow ability for Stalkers
+          4. Restart current level on death, instead of restarting game
+          5. Write score to high_score and create High Score variable (end screen) 
           6. TEST all functionality in test level.
-             Create Level 1 layout / add enemies and items / loop music
+             Create Level 1 layout / loop music logic
           7. Add background images and v. parallax
+             If possible, a fuzzy dreamlike animated BG would be awesome
           8. Add fall damage
           9. Continue with other levels
          10. To-do list above
          11. Display actual hearts for Hearts (instead of numbers)
          12. Save points?
          13. Add animated sprites (improved sprites) if time allows
+         14. (Opt.) Edit music and then try controlling tempo with Timer count
 '''
 
 ''' TODO: LEVELS (planning):
           NOTE: map out in Photoshop or other editor where you can use a grid
-          1. Escape from rising lava (make non-killable enemy Class and cycle through behaviors;
-             e.g. If level = 1, lava() )
+          1. Escape from rising lava
           2. Shrinking level (spikes closing in on sides of screen)
           3. Blocks randomly fall OR there are ice blocks; instakill enemy is simply this
 
@@ -725,14 +726,14 @@ class Gem(pygame.sprite.Sprite):
         player.paranoia += self.paranoia_value
         
     def update(self, level):
-        ''' No animation, so nothing needs to be updated '''
+        ''' No animation yet, so nothing needs to be updated '''
         pass
 
 
 class StressBall(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
-        super().__init__()
+        super().__init__(x, y, image)
 
         self.image = image
         self.rect = self.image.get_rect()
@@ -749,7 +750,7 @@ class StressBall(Gem):
 class CalmingGem(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
-        super().__init__()
+        super().__init__(x, y, image)
 
         self.image = image
         self.rect = self.image.get_rect()
@@ -766,7 +767,7 @@ class CalmingGem(Gem):
 class MagicStrawberry(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
-        super().__init__()
+        super().__init__(x, y, image)
 
         self.image = image
         self.rect = self.image.get_rect()
@@ -831,6 +832,7 @@ class Level():
         path1 = self.map_data['background']['image1']
         path2 = self.map_data['background']['image2']
 
+        # If images defined in file does not exist, don't use a BG image
         if os.path.isfile(application_path + path1):
             self.bg_image1 = pygame.image.load(application_path + path1).convert_alpha()
         else:
@@ -852,6 +854,7 @@ class Level():
         for group_name in self.map_data['tiles']:
             tile_group = self.map_data['tiles'][group_name]
             
+            # Scale tiles based on size defined in level file
             for element in tile_group:
                 x = element[0] * self.scale
                 y = element[1] * self.scale
@@ -1216,26 +1219,16 @@ class Game():
             self.active_sprites.update(self.level)
             self.hitbox.update(self.level)
 
-            # TODO: Update anxiety, paranoia, focus, adrenaline. Conditions here.
-            ''' RULES: Anxiety & paranoia increase as Timer decreases (try twice as fast),
-                    Focus increases as anxiety & paranoia decreases,
-                    Player speed decreases if focus below a certain threshold,
-                    Adrenaline increases if too close to deadly obstacle,
-                    Player speed increases temporarily by adrenaline amount,
-                    If paranoia past certain threshold, fake objects can randomly appear
-                    (TODO: Create fake class versions of items with no benefits: e.g.
-                        reduce anxiety item will instead increase anxiety and reduce score),
-                    If anxiety past certain threshold, inverse Player controls (Player.inverse)
-            '''
-            # Update timer and player variables
+            # Update timer
             self.timer_count_time += 1
             self.timer_count_other += 1
             if self.timer > 0 and self.timer_count_time == FPS:
                 self.timer -= 1
                 self.timer_count_time = 0
 
+            # Update anxiety, paranoia, and focus variables. Increases at 2x the speed of Timer
+            ''' TODO: SHOULD BE PROPORTIONAL TO TIMER, NOT FPS! '''
             if self.timer > 0 and self.timer_count_other == (FPS / 2):
-                #TODO: not proportional to Timer?
                 if self.player.anxiety < 100:
                     self.player.anxiety += 1
                 if self.player.paranoia < 100:
@@ -1244,15 +1237,31 @@ class Game():
                     self.player.focus = (int)(100 - ((self.player.anxiety / 2) + (self.player.paranoia / 2)))
                 self.timer_count_other = 0
 
-            # Conditions for anxiety, paranoia, focus thresholds
-            # If too high, inverse player controls, create random dummy items, decrease player speed if focus low
+            ''' Conditions for anxiety, paranoia, focus thresholds '''
+
+            # If anxiety is past a threshold, inverse player controls and invoke vignette screen effect
             # ...
+            # TODO: function call for screen effects
+
+            # If paranoia is past a threshold, randomly spawn fake items and screen artifacts
+            # ...
+            # TODO: function call for screen artifacts (can be same function as above)
+
+            # If focus below a certain threshold, slow Player speed
+            # ... Player.inverse()
 
             # If any variables are negative, change to 0
+            # TODO: can move to own function
             if self.player.score < 0:
                 self.player.score = 0
             if self.player.hearts < 0:
                 self.player.hearts = 0
+            if self.player.anxiety < 0:
+                self.player.anxiety = 0
+            if self.player.paranoia < 0:
+                self.player.paranoia = 0
+            if self.player.focus < 0:
+                self.player.focus = 0
 
             # Refresh HUD in case any variables were indeed below 0
             self.show_stats()
