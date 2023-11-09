@@ -277,10 +277,9 @@ class Player(pygame.sprite.Sprite):
             self.adrenaline_timer -= 1
         else:
             self.speed += self.adrenaline
-            self.adrenaline_timer = (FPS * 2)
+            self.adrenaline_timer = (FPS * 5)
             self.adrenaline = 0
             
-
     # Movement and tile collision detection
     def move_and_check_tiles(self, level):
         if self.inverse == False:
@@ -345,6 +344,13 @@ class Player(pygame.sprite.Sprite):
                 # Use same logic as items for individual collision. Ensures correct num of hearts is deduced
                 hit.apply(self)
                 self.hurt_timer = FPS
+
+    # Process collisions with nonkillable enemy hitboxes
+    def process_hitboxes(self, level):
+        hit_list = pygame.sprite.spritecollide(self, level.hitboxes, False)
+        for hit in hit_list:
+            hit.apply(self)
+            self.adrenaline_cooldown()
     
     # Screen edges collision detection
     def check_world_edges(self, level):
@@ -385,11 +391,11 @@ class Player(pygame.sprite.Sprite):
             
     def update(self, level):
         self.apply_gravity(level)
-        self.adrenaline_cooldown()
         self.move_and_check_tiles(level)
         self.check_world_edges(level)
         self.process_items(level)
         self.process_enemies(level)
+        self.process_hitboxes(level)
         self.check_goal(level)
         self.set_image()
 
@@ -658,21 +664,16 @@ class RisingLava(pygame.sprite.Sprite):
         self.set_image()
         
 
-class NonkillableEnemyHitbox(RisingLava):
+class LavaHitbox(pygame.sprite.Sprite):
     '''
     This class simply provides a rect that the Player can collide with that 
-    is slightly raised or close to a nonkillable enemy type so that adrenaline may increase.
+    is slightly raised or close to the RisingLava enemy type so that adrenaline may increase.
     '''
     
-    def __init__(self, x, y, images):
-        super().__init__(x, y, images)
+    def __init__(self, x, y):
+        super().__init__()
 
-        self.images = images
-        self.image = images[0]
-        self.rect = self.image.get_rect()
-        # TODO: works, but can't cover RisingLava or else no collision
-        self.rect.x = x
-        self.rect.y = y - 50
+        self.rect = pygame.Rect(x, (y-50), 1280, 1)
 
         self.vy = 1
 
@@ -686,8 +687,18 @@ class NonkillableEnemyHitbox(RisingLava):
         self.paranoia_value = 0
         self.adrenaline_value = 5
 
-    def set_image(self):
-        pass
+    def apply(self, player):
+        player.score += self.score_value
+        player.hearts += self.heart_value
+        player.anxiety += self.anxiety_value
+        player.paranoia += self.paranoia_value
+        player.adrenaline += self.adrenaline_value
+    
+    def move(self, level):
+        self.rect.y -= self.vy
+
+    def update(self, level):
+        self.move(level)
 
 
 ''' Items '''
@@ -789,6 +800,7 @@ class Level():
         self.load_tiles()
         self.load_items()
         self.load_enemies()
+        self.load_hitboxes()
         self.load_goal()
         
         self.generate_layers()
@@ -890,10 +902,21 @@ class Level():
                 s = StalkerEnemy(x, y, stalker_enemy_images)
             elif kind == "Rising_Lava":
                 s = RisingLava(x, y, nonkillable_enemy_images)
-            elif kind == "NK_Hitbox":
-                s = NonkillableEnemyHitbox(x, y, nonkillable_enemy_images)
                 
             self.enemies.add(s)
+
+    def load_hitboxes(self):
+        self.hitboxes = pygame.sprite.Group()
+
+        for element in self.map_data['hitboxes']:
+            x = element[0] * self.scale
+            y = element[1] * self.scale
+            kind = element[2]
+
+            if kind == "Lava_Hitbox":
+                s = LavaHitbox(x, y)
+
+            self.hitboxes.add(s)
 
     def load_goal(self):
         g = self.map_data['layout']['goal']
@@ -989,9 +1012,12 @@ class Game():
         self.player.move_to(self.level.start_x, self.level.start_y)
         self.player.reached_goal = False
 
-        # Group sprites
+        # Group active sprites for drawing
         self.active_sprites = pygame.sprite.Group()
         self.active_sprites.add(self.player, self.level.items, self.level.enemies)
+
+        # Define hitbox for level's nonkillable object
+        self.hitbox = self.level.hitboxes
 
     def start_level(self):
         play_music()
@@ -1188,6 +1214,7 @@ class Game():
     def update(self):
         if self.stage == Game.PLAYING or self.stage == Game.DEBUG:
             self.active_sprites.update(self.level)
+            self.hitbox.update(self.level)
 
             # TODO: Update anxiety, paranoia, focus, adrenaline. Conditions here.
             ''' RULES: Anxiety & paranoia increase as Timer decreases (try twice as fast),
