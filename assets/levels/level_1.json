@@ -15,10 +15,10 @@
 		"time": 240
 	},
 
-	"music": "assets/music/Tower_Of_Repression_main_3.ogg",
+	"music": "assets/music/Tower_Of_Repression_main_2.ogg",
 
 	"background": {
-		"color": [110, 15, 18],
+		"color": [115, 20, 22],
 		"image1": "assets/images/backgrounds/Sky.png",
 		"image2": "assets/images/backgrounds/Hills_2.png",
 		"parallax_speed1": 0.6,
@@ -60,7 +60,13 @@
 			[10, 53, "Red_Platform"],
 			[11, 53, "Red_Platform"],
 			[12, 53, "Red_Platform"],
-			[13, 53, "Red_Platform"]
+			[13, 53, "Red_Platform"],
+
+			[14, 3, "Red_Platform"],
+			[15, 3, "Red_Platform"],
+			[16, 3, "Red_Platform"],
+			[17, 3, "Red_Platform"],
+			[18, 3, "Red_Platform"]
 		],
 
 		"foreground": [

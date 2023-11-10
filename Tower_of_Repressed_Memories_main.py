@@ -207,6 +207,7 @@ class Player(pygame.sprite.Sprite):
 
         self.adrenaline_timer = 0
         self.hurt_timer = 0
+        self.speed_timer = 0
 
         self.anxiety = 0 #max=100
         self.paranoia = 0 #max=100
@@ -365,6 +366,32 @@ class Player(pygame.sprite.Sprite):
         if self.rect.top > level.height:
             self.hearts = 0
 
+    # Checks conditions for core variables that may affect player speed or produce screen artifacts
+    def check_variables(self):
+        ''' Conditions for anxiety, paranoia, focus thresholds '''
+        # If anxiety is past a threshold, inverse player controls and invoke vignette screen effect
+        if self.anxiety == 25:
+            self.inverse = False
+            Game.create_vignette(self)
+        elif self.anxiety == 75:
+            self.inverse = True
+
+        # If paranoia is past a threshold, randomly spawn fake items and screen artifacts
+        if self.paranoia == 25:
+            Game.create_screen_artifacts(self)
+
+        # If focus below a certain threshold, slow Player speed
+        if self.speed_timer > 0:
+            self.speed_timer -= 1
+        else:
+            # Speed timer used to accurately decrement player speed as described below
+            if self.focus == 75:
+                self.speed -= 2
+                self.speed_timer = FPS
+            elif self.focus == 50:
+                self.speed -= 3
+                self.speed_timer = FPS
+
     def check_goal(self, level):
         self.reached_goal = level.goal.contains(self.rect)
 
@@ -397,6 +424,7 @@ class Player(pygame.sprite.Sprite):
         self.process_items(level)
         self.process_enemies(level)
         self.process_hitboxes(level)
+        self.check_variables()
         self.check_goal(level)
         self.set_image()
 
@@ -674,7 +702,7 @@ class LavaHitbox(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
 
-        self.rect = pygame.Rect(x, (y-60), 1280, 1)
+        self.rect = pygame.Rect(x, (y-100), 1280, 1)
 
         self.vy = 1
 
@@ -1150,6 +1178,16 @@ class Game():
         rect7.left = (spacing * 2) - (rect7.width / 2)
         rect7.top = 24
         screen.blit(text7, rect7)
+
+    ''' Create different intensity vignette screen effect depending on anxiety level '''
+    def create_vignette(player):
+        # 
+        pass
+
+    ''' Create distractions and distortions on screen when paranoia high '''
+    def create_screen_artifacts(player):
+        # Change amount depending on how high paranoia is
+        pass
                    
     ''' Calculation for moving tiles based on Player position '''
     def calculate_offset(self):
@@ -1227,7 +1265,7 @@ class Game():
                 self.timer_count_time = 0
 
             # Update anxiety, paranoia, and focus variables. Increases at 2x the speed of Timer
-            ''' TODO: SHOULD BE PROPORTIONAL TO TIMER, NOT FPS! '''
+            ''' TODO: VARIABLES SHOULD BE PROPORTIONAL TO TIMER, NOT FPS! '''
             if self.timer > 0 and self.timer_count_other == (FPS / 2):
                 if self.player.anxiety < 100:
                     self.player.anxiety += 1
@@ -1236,19 +1274,6 @@ class Game():
                 if self.player.focus > 0 and self.player.focus < 101:
                     self.player.focus = (int)(100 - ((self.player.anxiety / 2) + (self.player.paranoia / 2)))
                 self.timer_count_other = 0
-
-            ''' Conditions for anxiety, paranoia, focus thresholds '''
-
-            # If anxiety is past a threshold, inverse player controls and invoke vignette screen effect
-            # ...
-            # TODO: function call for screen effects
-
-            # If paranoia is past a threshold, randomly spawn fake items and screen artifacts
-            # ...
-            # TODO: function call for screen artifacts (can be same function as above)
-
-            # If focus below a certain threshold, slow Player speed
-            # ... Player.inverse()
 
             # If any variables are negative, change to 0
             # TODO: can move to own function
