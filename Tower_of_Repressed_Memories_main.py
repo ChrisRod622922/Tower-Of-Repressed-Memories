@@ -8,24 +8,24 @@
 '''
 
 ''' TODO:
-          1. Implement core game variables (anxiety, paranoia, focus, timer, scoring, adrenaline)
-             TODO: variable conditions, fix variables not being proportional to Timer, add screen effects and artifacts
-             --- IN PROGRESS ---
-          2. Nonkillable enemies (e.g. Lava) need to move in proportion to Timer
-          3. Add teleportation and follow ability for Stalkers
-          4. Restart current level on death, instead of restarting game
-          5. Write score to high_score and create High Score variable (end screen) 
-          6. TEST all functionality in test level.
+          1. Nonkillable enemies (e.g. Lava) need to move in proportion to Timer
+                    --- IN PROGRESS ---
+          2. Add teleportation and follow ability for Stalkers
+          3. Add screen effects and artifacts
+          4. Add text updates on status effects (such as "Speed decreased due to lack of focus!")
+          5. Restart current level on death, instead of restarting game
+          6. Write score to high_score and create High Score variable (end screen) 
+          7. TEST all functionality in test level.
              Create Level 1 layout / loop music logic
-          7. Add background images and v. parallax
+          8. Add background images and v. parallax
              If possible, a fuzzy dreamlike animated BG would be awesome
-          8. Add fall damage
-          9. Continue with other levels
-         10. To-do list above
-         11. Display actual hearts for Hearts (instead of numbers)
-         12. Save points?
-         13. Add animated sprites (improved sprites) if time allows
-         14. (Opt.) Edit music and then try controlling tempo with Timer count
+          9. Add fall damage
+         10. Continue with other levels
+         11. To-do list above
+         12. Display actual hearts for Hearts (instead of numbers)
+         13. Save points?
+         14. Add animated sprites (improved sprites) if time allows
+         15. (Opt.) Edit music and then try controlling tempo with Timer count
 '''
 
 ''' TODO: LEVELS (planning):
@@ -370,7 +370,7 @@ class Player(pygame.sprite.Sprite):
     def check_variables(self):
         ''' Conditions for anxiety, paranoia, focus thresholds '''
         # If anxiety is past a threshold, inverse player controls and invoke vignette screen effect
-        if self.anxiety == 25:
+        if self.anxiety > 25 and self.anxiety < 75:
             self.inverse = False
             Game.create_vignette(self)
         elif self.anxiety == 75:
@@ -1018,9 +1018,12 @@ class Game():
         self.levels = levels
         self.level_change_delay = 90
 
+        # Default time variables
         self.timer = 300
+        self.initial_time = self.timer
         self.timer_count_time = 0
-        self.timer_count_other = 0
+        self.max_value_a_p = 100
+        self.total_time_a_p = 2 * self.initial_time
     
     def setup(self):
         self.player = Player(player_images)
@@ -1038,6 +1041,10 @@ class Game():
         self.level = Level(level_data)
 
         self.timer = self.level.load_timer()
+        self.initial_time = self.timer
+        self.total_time_a_p = 2 * self.initial_time
+        # Calculate the rate of increase for anxiety and paranoia
+        self.rate = self.max_value_a_p / (self.initial_time / 2)
 
         # Move Player to starting coordinates as defined in level file
         self.player.move_to(self.level.start_x, self.level.start_y)
@@ -1181,7 +1188,7 @@ class Game():
 
     ''' Create different intensity vignette screen effect depending on anxiety level '''
     def create_vignette(player):
-        # 
+        # Can even add floating text with updates like, "Panic induced!" when Player controls are inversed
         pass
 
     ''' Create distractions and distortions on screen when paranoia high '''
@@ -1259,23 +1266,19 @@ class Game():
 
             # Update timer
             self.timer_count_time += 1
-            self.timer_count_other += 1
             if self.timer > 0 and self.timer_count_time == FPS:
                 self.timer -= 1
                 self.timer_count_time = 0
 
-            # Update anxiety, paranoia, and focus variables. Increases at 2x the speed of Timer
-            ''' TODO: VARIABLES SHOULD BE PROPORTIONAL TO TIMER, NOT FPS! '''
-            if self.timer > 0 and self.timer_count_other == (FPS / 2):
-                if self.player.anxiety < 100:
-                    self.player.anxiety += 1
-                if self.player.paranoia < 100:
-                    self.player.paranoia += 1
-                if self.player.focus > 0 and self.player.focus < 101:
-                    self.player.focus = (int)(100 - ((self.player.anxiety / 2) + (self.player.paranoia / 2)))
-                self.timer_count_other = 0
+            # Update anxiety and paranoia based on elapsed time
+            self.player.anxiety = (int)(min(self.max_value_a_p, self.rate * (self.initial_time - self.timer)))
+            self.player.paranoia = (int)(min(self.max_value_a_p, self.rate * (self.initial_time - self.timer)))
 
-            # If any variables are negative, change to 0
+            # Update focus
+            if self.player.focus > 0 and self.player.focus < 101:
+                self.player.focus = (int)(100 - ((self.player.anxiety / 2) + (self.player.paranoia / 2)))
+
+            # If any variables are negative, change to 0 before updating display
             # TODO: can move to own function
             if self.player.score < 0:
                 self.player.score = 0
