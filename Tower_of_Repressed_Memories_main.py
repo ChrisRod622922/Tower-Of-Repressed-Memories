@@ -14,18 +14,17 @@
           3. Add screen effects and artifacts
           4. Add text updates on status effects (such as "Speed decreased due to lack of focus!")
           5. Restart current level on death, instead of restarting game
-          6. Write score to high_score and create High Score variable (end screen) 
-          7. TEST all functionality in test level.
+          6. TEST all functionality in test level.
              Create Level 1 layout / loop music logic
-          8. Add background images and v. parallax
+          7. Add background images and v. parallax
              If possible, a fuzzy dreamlike animated BG would be awesome
-          9. Add fall damage
-         10. Continue with other levels
-         11. To-do list above
-         12. Display actual hearts for Hearts (instead of numbers)
-         13. Save points?
-         14. Add animated sprites (improved sprites) if time allows
-         15. (Opt.) Edit music and then try controlling tempo with Timer count
+          8. Add fall damage
+          9. Continue with other levels
+         10. To-do list above
+         11. Display actual hearts for Hearts (instead of numbers)
+         12. Save points?
+         13. Add animated sprites (improved sprites) if time allows
+         14. (Opt.) Edit music and then try controlling tempo with Timer count
 '''
 
 ''' TODO: LEVELS (planning):
@@ -204,18 +203,19 @@ class Player(pygame.sprite.Sprite):
         self.inverse = False
 
         self.hearts = 5
-
-        self.adrenaline_timer = 0
-        self.hurt_timer = 0
-        self.speed_timer = 0
-
         self.anxiety = 0 #max=100
         self.paranoia = 0 #max=100
         self.focus = 100
         self.adrenaline = 0
+
+        self.adrenaline_timer = 0
+        self.hurt_timer = 0
+        self.speed_timer = 0
     
         self.reached_goal = False
+
         self.score = 0
+        self.high_score = 0
 
         self.facing_right = True
         self.steps = 0
@@ -333,8 +333,10 @@ class Player(pygame.sprite.Sprite):
         hit_list = pygame.sprite.spritecollide(self, level.items, True)
 
         for hit in hit_list:
-            # Assign item's score value to Player score and other effects
+            # Assign item's values to Player variables, such as anxiety and paranoia
+            print("Before hit anxiety: " + str(self.anxiety) + ". Paranoia: " + str(self.paranoia))
             hit.apply(self)
+            print("After hit anxiety: " + str(self.anxiety) + ". Paranoia: " + str(self.paranoia))
 
     # Enemy collision detection
     def process_enemies(self, level):
@@ -385,12 +387,14 @@ class Player(pygame.sprite.Sprite):
             self.speed_timer -= 1
         else:
             # Speed timer used to accurately decrement player speed as described below
-            if self.focus == 75:
+            if self.focus == 50:
                 self.speed -= 2
                 self.speed_timer = FPS
-            elif self.focus == 50:
+                print("Speed: " + str(self.speed))
+            elif self.focus == 25:
                 self.speed -= 3
                 self.speed_timer = FPS
+                print("Speed: " + str(self.speed))
 
     def check_goal(self, level):
         self.reached_goal = level.goal.contains(self.rect)
@@ -1023,16 +1027,26 @@ class Game():
         self.initial_time = self.timer
         self.timer_count_time = 0
         self.max_value_a_p = 100
-        self.total_time_a_p = 2 * self.initial_time
     
     def setup(self):
+        # Create player
         self.player = Player(player_images)
         self.mc = pygame.sprite.GroupSingle()
         self.mc.add(self.player)
 
+        # Set stage and start loading first level
         self.stage = Game.START
         self.current_level = 1
         self.load_level()
+
+        # Retrieve High Score if it exists
+        if not os.path.exists(application_path + 'assets/high_score/high_score.txt'):
+            with open(application_path + '/assets/high_score/high_score.txt', 'w') as f:
+                f.write(str(self.player.high_score))
+            f.close()
+        high_score_file = open(application_path + '/assets/high_score/high_score.txt', 'r')
+        self.player.high_score = int(high_score_file.readline())
+        high_score_file.close()
 
     def load_level(self):
         # Track current level and update variables based on level data
@@ -1042,7 +1056,6 @@ class Game():
 
         self.timer = self.level.load_timer()
         self.initial_time = self.timer
-        self.total_time_a_p = 2 * self.initial_time
         # Calculate the rate of increase for anxiety and paranoia
         self.rate = self.max_value_a_p / (self.initial_time / 2)
 
@@ -1186,6 +1199,14 @@ class Game():
         rect7.top = 24
         screen.blit(text7, rect7)
 
+        high_score_str = "High Score: " + str(self.player.high_score)
+
+        text8 = font_sm.render(high_score_str, 1, YELLOW, pygame.SRCALPHA)
+        rect8 = text8.get_rect()
+        rect8.right = SCREEN_WIDTH - 24
+        rect8.top = rect3.bottom + 10
+        screen.blit(text8, rect8)
+
     ''' Create different intensity vignette screen effect depending on anxiety level '''
     def create_vignette(player):
         # Can even add floating text with updates like, "Panic induced!" when Player controls are inversed
@@ -1195,6 +1216,14 @@ class Game():
     def create_screen_artifacts(player):
         # Change amount depending on how high paranoia is
         pass
+
+    ''' Update high score function '''
+    def update_highscore(self):
+        if self.player.score >= self.player.high_score:
+            self.player.high_score = self.player.score
+
+        with open(application_path + '/assets/high_score/high_score.txt', 'w') as f:
+            f.write(str(self.player.high_score))
                    
     ''' Calculation for moving tiles based on Player position '''
     def calculate_offset(self):
@@ -1270,9 +1299,15 @@ class Game():
                 self.timer -= 1
                 self.timer_count_time = 0
 
+            # Calculate timer-based increase
+            timer_increase = self.rate * (self.initial_time - self.timer)
+
             # Update anxiety and paranoia based on elapsed time
-            self.player.anxiety = (int)(min(self.max_value_a_p, self.rate * (self.initial_time - self.timer)))
-            self.player.paranoia = (int)(min(self.max_value_a_p, self.rate * (self.initial_time - self.timer)))
+            self.player.anxiety = (int)(min(self.max_value_a_p, timer_increase))
+            self.player.paranoia = (int)(min(self.max_value_a_p, timer_increase))
+
+            ''' TODO: WHY TF am I stuck???
+                NOTE: Give up for now. '''
 
             # Update focus
             if self.player.focus > 0 and self.player.focus < 101:
@@ -1290,6 +1325,8 @@ class Game():
                 self.player.paranoia = 0
             if self.player.focus < 0:
                 self.player.focus = 0
+            if self.player.focus > 100:
+                self.player.focus = 100
 
             # Refresh HUD in case any variables were indeed below 0
             self.show_stats()
@@ -1335,10 +1372,13 @@ class Game():
         if self.stage == Game.START:
             self.show_title_screen()        
         elif self.stage == Game.CLEARED:
+            self.update_highscore()
             self.show_cleared_screen()
         elif self.stage == Game.WIN:
+            self.update_highscore()
             self.show_win_screen()
         elif self.stage == Game.LOSE:
+            self.update_highscore()
             self.show_lose_screen()
         elif self.stage == Game.PAUSE:
             self.show_pause()
