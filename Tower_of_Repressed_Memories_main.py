@@ -44,6 +44,7 @@ import json
 import os
 import sys
 import random
+import time
 
 if getattr(sys, 'frozen', False):
     application_path = sys._MEIPASS + '/'
@@ -1021,6 +1022,7 @@ class Game():
         self.running = True
         self.levels = levels
         self.level_change_delay = 90
+        self.cleared_timer = self.level_change_delay
 
         # Default time variables
         self.timer = 300
@@ -1084,6 +1086,19 @@ class Game():
         else:
             self.stage = Game.WIN
             win_snd.play()
+
+    ''' Calculation for moving tiles based on Player position '''
+    def calculate_offset(self):
+        x = 0
+        y = -1 * self.player.rect.centery + SCREEN_HEIGHT / 2
+
+        ''' Vertical offset '''
+        if self.player.rect.centery < SCREEN_HEIGHT / 2:
+            y = 0
+        elif self.player.rect.centery > self.level.height - SCREEN_HEIGHT / 2:
+            y = -1 * self.level.height + SCREEN_HEIGHT
+
+        return round(x), round(y)
 
     ''' Screens '''
     def show_title_screen(self):
@@ -1217,6 +1232,13 @@ class Game():
         # Change amount depending on how high paranoia is
         pass
 
+    ''' Update player score with leftover time on timer '''
+    def update_final_score(self):
+        while self.timer > 0:
+            self.timer -= 1
+            self.player.score += 1
+            self.show_stats()
+
     ''' Update high score function '''
     def update_highscore(self):
         if self.player.score >= self.player.high_score:
@@ -1224,19 +1246,6 @@ class Game():
 
         with open(application_path + '/assets/high_score/high_score.txt', 'w') as f:
             f.write(str(self.player.high_score))
-                   
-    ''' Calculation for moving tiles based on Player position '''
-    def calculate_offset(self):
-        x = 0
-        y = -1 * self.player.rect.centery + SCREEN_HEIGHT / 2
-
-        ''' Vertical offset '''
-        if self.player.rect.centery < SCREEN_HEIGHT / 2:
-            y = 0
-        elif self.player.rect.centery > self.level.height - SCREEN_HEIGHT / 2:
-            y = -1 * self.level.height + SCREEN_HEIGHT
-
-        return round(x), round(y)
 
 
     ''' Input processing '''
@@ -1335,7 +1344,6 @@ class Game():
             if self.player.reached_goal:
                 stop_music()
                 self.stage = Game.CLEARED
-                self.cleared_timer = self.level_change_delay
             elif self.player.hearts <= 0 or self.timer <= 0:
                 self.stage = Game.LOSE
                 lose_snd.play()
@@ -1370,12 +1378,12 @@ class Game():
         self.show_stats()
         
         if self.stage == Game.START:
-            self.show_title_screen()        
+            self.show_title_screen()
         elif self.stage == Game.CLEARED:
+            self.update_final_score()
             self.update_highscore()
             self.show_cleared_screen()
         elif self.stage == Game.WIN:
-            self.update_highscore()
             self.show_win_screen()
         elif self.stage == Game.LOSE:
             self.update_highscore()
