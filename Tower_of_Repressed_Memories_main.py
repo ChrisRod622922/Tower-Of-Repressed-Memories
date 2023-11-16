@@ -8,25 +8,26 @@
 ''' TODO:
           1. Add teleportation and follow ability for Stalkers
                 --- IN PROGRESS ---
-          2. Add screen effects and artifacts
-          3. Add text updates on status effects (such as "Speed decreased due to lack of focus!")
+          2. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
+          3. Add screen effects and artifacts
           4. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
           5. Add menu option to toggle fullscreen mode
           6. FIX ITEM BUG (if can't fix, might need to discard)
              (Try changing math for anxiety/paranoia & try to have them increase at a predetermined rate)
-          7. Add background images and v. parallax
+          7. FIX LAVA BUG (moves before game actually starts -- probably has to do w/elapsed time via clock.ticks() )
+          8. Add background images and v. parallax
              If possible, a fuzzy dreamlike animated BG would be awesome
-          8. Restart current level on death, instead of restarting game
+          9. Restart current level on death, instead of restarting game
              Create Level 1 layout / loop music logic
-          9. Add fall damage
-         10. Display actual hearts for Hearts (instead of numbers)
-         11. REPLACE SPRITES & SOUNDS
+         10. Add fall damage
+         11. Display actual hearts for Hearts (instead of numbers)
+         12. REPLACE SPRITES & SOUNDS
              Add animated sprites (improved sprites) if time allows
-         12. CLEAN UP CODE / SEPARATE MODULES
-             (Use CTRL+F to find leftover TODO's)
-         13. Save points?
-         14. Continue with other levels
-         15. (Opt.) Edit music and then try controlling tempo with Timer count
+         13. CLEAN UP CODE / SEPARATE MODULES
+             (Use CTRL+F to find leftover TODO's & print statements)
+         14. Save points?
+         15. Continue with other levels
+         16. (Opt.) Edit music and then try controlling tempo with Timer count
 '''
 
 ''' TODO: LEVELS (planning):
@@ -278,12 +279,32 @@ class Player(pygame.sprite.Sprite):
             self.vy = level.terminal_velocity
 
     def adrenaline_cooldown(self):
+        # Cooldown duration in seconds
+        cooldown_time_sec = 3
+
         if self.adrenaline_timer > 0:
             self.adrenaline_timer -= 1
         else:
+            # Store the original speed before applying adrenaline
+            original_speed = self.speed
+
+            # Increase player's speed by adrenaline
             self.speed += self.adrenaline
-            self.adrenaline_timer = (FPS * 3)
+
+            # Reset adrenaline timer
+            self.adrenaline_timer = (FPS * cooldown_time_sec)
+
+            # Schedule task to restore the original speed after the cooldown
+            pygame.time.set_timer(pygame.USEREVENT, (cooldown_time_sec * 1000), True)
+            pygame.event.post(pygame.event.Event(pygame.USEREVENT, {}))
+
+            # Reset adrenaline
             self.adrenaline = 0
+
+        # Check for the event to restore the original speed
+        for event in pygame.event.get():
+            if event.type == pygame.USEREVENT:
+                self.speed = original_speed
             
     # Movement and tile collision detection
     def move_and_check_tiles(self, level):
@@ -356,8 +377,11 @@ class Player(pygame.sprite.Sprite):
     def process_hitboxes(self, level):
         hit_list = pygame.sprite.spritecollide(self, level.hitboxes, False)
         for hit in hit_list:
-            print("Hit hitbox: " + str(hit))
             hit.apply(self)
+            # If player adrenaline is greater than hitbox's adrenaline value, reset it to that value
+            for hitbox in level.hitboxes:
+                if self.adrenaline > hitbox.adrenaline_value:
+                    self.adrenaline = hitbox.adrenaline_value
             self.adrenaline_cooldown()
     
     # Screen edges collision detection
@@ -394,11 +418,11 @@ class Player(pygame.sprite.Sprite):
             if self.focus == 50:
                 self.speed -= 2
                 self.speed_timer = FPS
-                #print("Speed: " + str(self.speed))
+                print("Focus dropped to 50! New speed: " + str(self.speed))
             elif self.focus == 25:
                 self.speed -= 3
                 self.speed_timer = FPS
-                #print("Speed: " + str(self.speed))
+                print("Focus dropped to 25! New speed: " + str(self.speed))
 
     def check_goal(self, level):
         self.reached_goal = level.goal.contains(self.rect)
@@ -672,8 +696,8 @@ class RisingLava(pygame.sprite.Sprite):
             self.image = images[0]
             self.rect = self.image.get_rect()
 
-        self.rect.x = x
-        self.rect.y = y
+            self.rect.x = x
+            self.rect.y = y
 
         # Default speed
         self.vy = 1
@@ -699,6 +723,8 @@ class RisingLava(pygame.sprite.Sprite):
         player.adrenaline += self.adrenaline_value
     
     def move(self, total_time, initial_time):
+        # 234
+
         # Calculate elapsed time
         elapsed_time = pygame.time.get_ticks() / 1000 - initial_time
 
@@ -710,6 +736,7 @@ class RisingLava(pygame.sprite.Sprite):
 
         # Calculate the offset based on normalized position
         offset = normalized_position * SCREEN_HEIGHT
+        ''' TODO: add multiplier to screen height corresponding to level scale, since way more than 720 pixels high '''
 
         # Set the new y position relative to the initial position
         self.rect.y = int(self.initial_position - offset)
@@ -742,6 +769,8 @@ class LavaHitbox(RisingLava):
         self.anxiety_value = 0
         self.paranoia_value = 0
         self.adrenaline_value = 5
+
+        self.initial_position = y - 100
 
     ''' Override update method '''
     def update(self, total_time, initial_time, level):
@@ -1083,7 +1112,7 @@ class Game():
 
         # Group active sprites for drawing
         self.active_sprites = pygame.sprite.Group()
-        self.active_sprites.add(self.player, self.level.items, self.level.enemies, self.level.hitboxes)
+        self.active_sprites.add(self.player, self.level.items, self.level.enemies)
 
         # Define unkillable object hitbox for level
         #TODO: will need conditions to load correct unkillable obj hitbox for each level
@@ -1317,6 +1346,7 @@ class Game():
     def update(self):
         if self.stage == Game.PLAYING or self.stage == Game.DEBUG:
             self.active_sprites.update(self.initial_time, self.initial_NK_obj_time, self.level)
+            self.hitbox.update(self.initial_time, self.initial_NK_obj_time, self.level)
 
             # Update timer
             self.timer_count_time += 1
