@@ -3,7 +3,7 @@
 		"scale": 64,
 		"size": [20, 64],
 		"start": [1, 58],
-		"goal": [17, 2, 1, 1]
+		"goal": [18, 50, 2, 2]
 	},
 
 	"physics": {
@@ -12,7 +12,7 @@
 	},
 
 	"timer": {
-		"time": 240
+		"time": 234
 	},
 
 	"music": "assets/music/Tower_Of_Repression_main_1.ogg",
@@ -27,7 +27,7 @@
 
 	"tiles": {
 		"midground": [
-			[17, 2, "Door"]
+			[18, 50, "Door"]
 		],
 
 		"main": [
@@ -62,11 +62,10 @@
 			[12, 53, "Red_Platform"],
 			[13, 53, "Red_Platform"],
 
-			[14, 3, "Red_Platform"],
-			[15, 3, "Red_Platform"],
-			[16, 3, "Red_Platform"],
-			[17, 3, "Red_Platform"],
-			[18, 3, "Red_Platform"]
+			[15, 51, "Red_Platform"],
+			[16, 51, "Red_Platform"],
+			[17, 51, "Red_Platform"],
+			[18, 51, "Red_Platform"]
 		],
 
 		"foreground": [
