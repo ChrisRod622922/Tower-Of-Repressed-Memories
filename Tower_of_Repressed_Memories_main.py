@@ -4,33 +4,32 @@
           - Add menu option to toggle fullscreen mode
           - ALL SPRITES/TILES ARE TEMPORARY: Replace sprites, fonts and sounds eventually
           - Separate class modules into their own files
+          - Game class needs more code moved to dedicated functions!!
 '''
 
 ''' TODO:
-          1. Implement core game variables (anxiety, paranoia, focus, timer, scoring, adrenaline)
-             TODO: math for focus, Timer influnece on anxiety/paranoia, NKE influence on adrenaline
-             --- IN PROGRESS ---
-          2. HUD (TODO: add anxiety, paranoia to screen; show high score at end screen)
-             --- IN PROGRESS ---
-          3. Figure out collision with distinct enemies in Group!
-             TODO: if can't get to work, remove enemies from Group and do individual collision detection
-          4. Implement nonkillable enemy class (why not moving??) (TODO: get to work first, then move with Timer)
-          5. Restart current level on death
-          6. Write score to high_score and create High Score variable (end screen)
-          7. TEST all functionality in test level.
-             Create Level 1 layout / add enemies and items / loop music
-          8. Add background images and v. parallax
-          9. Add fall damage
-         10. Add teleportation ability for Stalkers
-         11. Continue with other levels
-         12. To-do list above
-         13. Save points?
-         14. Add animated sprites (improved sprites) if time allows
+          1. Nonkillable enemies (e.g. Lava) need to move in proportion to Timer
+                    --- IN PROGRESS ---
+          2. Add teleportation and follow ability for Stalkers
+          3. Add screen effects and artifacts
+          4. Add text updates on status effects (such as "Speed decreased due to lack of focus!")
+          5. Restart current level on death, instead of restarting game
+          6. TEST all functionality in test level.
+             Create Level 1 layout / loop music logic
+          7. Add background images and v. parallax
+             If possible, a fuzzy dreamlike animated BG would be awesome
+          8. Add fall damage
+          9. Continue with other levels
+         10. To-do list above
+         11. Display actual hearts for Hearts (instead of numbers)
+         12. Save points?
+         13. Add animated sprites (improved sprites) if time allows
+         14. (Opt.) Edit music and then try controlling tempo with Timer count
 '''
 
 ''' TODO: LEVELS (planning):
-          1. Escape from rising lava (make non-killable enemy Class and cycle through behaviors;
-             e.g. If level = 1, lava() )
+          NOTE: map out in Photoshop or other editor where you can use a grid
+          1. Escape from rising lava
           2. Shrinking level (spikes closing in on sides of screen)
           3. Blocks randomly fall OR there are ice blocks; instakill enemy is simply this
 
@@ -45,6 +44,7 @@ import json
 import os
 import sys
 import random
+import time
 
 if getattr(sys, 'frozen', False):
     application_path = sys._MEIPASS + '/'
@@ -113,11 +113,11 @@ BRIGHT_GREEN = (0, 200, 0)
 STORMY_BLUE =  (114, 144, 169)
 
 # Fonts
-font_xs = load_font("assets/fonts/ToThePointRegular-n9y4.ttf", 16)
-font_sm = load_font("assets/fonts/ToThePointRegular-n9y4.ttf", 32)
-font_md = load_font("assets/fonts/ToThePointRegular-n9y4.ttf", 48)
-font_lg = load_font("assets/fonts/ToThePointRegular-n9y4.ttf", 64)
-font_xl = load_font("assets/fonts/TheConfessionRegular-YBpv.ttf", 80)
+font_xs = load_font("assets/fonts/TheConfessionRegular-YBpv.ttf", 16)
+font_sm = load_font("assets/fonts/TheConfessionRegular-YBpv.ttf", 32)
+font_md = load_font("assets/fonts/TheConfessionRegular-YBpv.ttf", 48)
+font_lg = load_font("assets/fonts/TheConfessionRegular-YBpv.ttf", 64)
+font_xl = load_font("assets/fonts/ToThePointRegular-n9y4.ttf", 80)
 
 # Sounds
 gem_snd = load_sound('assets/sounds/gem.ogg')
@@ -162,9 +162,7 @@ terror_enemy_images = [ load_image('assets/images/enemy/platformPack_tile011a.pn
 stalker_enemy_images = [ load_image('assets/images/enemy/platformPack_tile044.png'),
                           load_image('assets/images/enemy/platformPack_tile044.png') ]
 
-nonkillable_enemy_images = load_image('assets/images/enemy/Lava.png')
-
-spike_enemy_images = [ load_image('assets/images/enemy/platformPack_tile043.png') ]
+nonkillable_enemy_images = [ load_image('assets/images/enemy/Lava.png') ]
 
 item_images = { "Gem": load_image('assets/images/item/platformPack_item008.png'),
                 "Stress_Ball": load_image('assets/images/item/platformPack_item010.png'),
@@ -206,15 +204,19 @@ class Player(pygame.sprite.Sprite):
         self.inverse = False
 
         self.hearts = 5
-        self.hurt_timer = 0
-
         self.anxiety = 0 #max=100
         self.paranoia = 0 #max=100
-        self.focus = 100 #max=100
-        self.adrenaline = 0 #max=5
+        self.focus = 100
+        self.adrenaline = 0
+
+        self.adrenaline_timer = 0
+        self.hurt_timer = 0
+        self.speed_timer = 0
     
         self.reached_goal = False
+
         self.score = 0
+        self.high_score = 0
 
         self.facing_right = True
         self.steps = 0
@@ -273,6 +275,14 @@ class Player(pygame.sprite.Sprite):
         if self.vy > level.terminal_velocity:
             self.vy = level.terminal_velocity
 
+    def adrenaline_cooldown(self):
+        if self.adrenaline_timer > 0:
+            self.adrenaline_timer -= 1
+        else:
+            self.speed += self.adrenaline
+            self.adrenaline_timer = (FPS * 5)
+            self.adrenaline = 0
+            
     # Movement and tile collision detection
     def move_and_check_tiles(self, level):
         if self.inverse == False:
@@ -297,7 +307,7 @@ class Player(pygame.sprite.Sprite):
                     self.rect.top = hit.rect.bottom
                 self.vy = 0
                 
-        # If facing left
+        # Reverse movement
         elif self.inverse == True:
             
             self.rect.x -= self.vx
@@ -324,55 +334,28 @@ class Player(pygame.sprite.Sprite):
         hit_list = pygame.sprite.spritecollide(self, level.items, True)
 
         for hit in hit_list:
-            # Assign item's score value to Player score and other effects
-            self.score += hit.score_value
-            self.hearts += hit.heart_value
-            self.anxiety += hit.anxiety_value
-            self.paranoia += hit.paranoia_value
+            # Assign item's values to Player variables, such as anxiety and paranoia
+            print("Before hit anxiety: " + str(self.anxiety) + ". Paranoia: " + str(self.paranoia))
             hit.apply(self)
+            print("After hit anxiety: " + str(self.anxiety) + ". Paranoia: " + str(self.paranoia))
 
     # Enemy collision detection
     def process_enemies(self, level):
         if self.hurt_timer > 0:
             self.hurt_timer -= 1
         else:
-            MS_group = pygame.sprite.Group([s for s in level.enemies if s == MindSlimeEnemy])
-            hit_list_MS = pygame.sprite.spritecollide(self, MS_group, False)
+            hit_list = pygame.sprite.spritecollide(self, level.enemies, False)
+            for hit in hit_list:
+                # Use same logic as items for individual collision. Ensures correct num of hearts is deduced
+                hit.apply(self)
+                self.hurt_timer = FPS
 
-            for hit in hit_list_MS:
-                self.hearts -= 2
-                self.hurt_timer = 30
-            
-            # TODO: distinct collision detection from SpriteGroup???
-            '''
-            for i in range(0, len(level.enemies)):
-                enemy = level.enemies.sprites()[i]
-                # TODO: NK enemy not working (see Class function)
-                if enemy == MindSlimeEnemy:
-                    #hit_list_NK = pygame.sprite.spritecollide(self, enemy, False)
-                    if pygame.sprite.spritecollide(self, enemy, False):
-                        self.hearts -= 2
-                        self.hurt_timer = 30
-                i += 1
-            
-            hit_list_MS = pygame.sprite.spritecollide(self, level.enemies["MindSlime"], False)
-            hit_list_T = pygame.sprite.spritecollide(self, level.enemies["Terror"], False)
-            hit_list_S = pygame.sprite.spritecollide(self, level.enemies["Stalker"], False)
-            #hit_list_SP = pygame.sprite.spritecollide(self, level.enemies["Spike"], False)
-         
-            for hit in hit_list_NK:
-                self.hearts = 0
-                self.hurt_timer = 30
-            for hit in hit_list_MS:
-                self.hearts -= 2
-                self.hurt_timer = 30
-            for hit in hit_list_T:
-                self.hearts -= 1
-                self.hurt_timer = 30
-            for hit in hit_list_S:
-                self.hearts -= 2
-                self.hurt_timer = 30
-            '''
+    # Process collisions with nonkillable enemy hitboxes
+    def process_hitboxes(self, level):
+        hit_list = pygame.sprite.spritecollide(self, level.hitboxes, False)
+        for hit in hit_list:
+            hit.apply(self)
+            self.adrenaline_cooldown()
     
     # Screen edges collision detection
     def check_world_edges(self, level):
@@ -385,6 +368,34 @@ class Player(pygame.sprite.Sprite):
         ''' Vertical detection '''
         if self.rect.top > level.height:
             self.hearts = 0
+
+    # Checks conditions for core variables that may affect player speed or produce screen artifacts
+    def check_variables(self):
+        ''' Conditions for anxiety, paranoia, focus thresholds '''
+        # If anxiety is past a threshold, inverse player controls and invoke vignette screen effect
+        if self.anxiety > 25 and self.anxiety < 75:
+            self.inverse = False
+            Game.create_vignette(self)
+        elif self.anxiety == 75:
+            self.inverse = True
+
+        # If paranoia is past a threshold, randomly spawn fake items and screen artifacts
+        if self.paranoia == 25:
+            Game.create_screen_artifacts(self)
+
+        # If focus below a certain threshold, slow Player speed
+        if self.speed_timer > 0:
+            self.speed_timer -= 1
+        else:
+            # Speed timer used to accurately decrement player speed as described below
+            if self.focus == 50:
+                self.speed -= 2
+                self.speed_timer = FPS
+                print("Speed: " + str(self.speed))
+            elif self.focus == 25:
+                self.speed -= 3
+                self.speed_timer = FPS
+                print("Speed: " + str(self.speed))
 
     def check_goal(self, level):
         self.reached_goal = level.goal.contains(self.rect)
@@ -417,6 +428,8 @@ class Player(pygame.sprite.Sprite):
         self.check_world_edges(level)
         self.process_items(level)
         self.process_enemies(level)
+        self.process_hitboxes(level)
+        self.check_variables()
         self.check_goal(level)
         self.set_image()
 
@@ -443,6 +456,20 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
         self.steps = 0
         self.step_rate = 6
         self.walk_index = 0
+
+        self.score_value = -10
+        self.heart_value = -2
+        self.anxiety_value = 5
+        self.paranoia_value = 0
+        self.adrenaline_value = 0
+
+    # Apply negative effects to Player upon collision (such as -Hearts)
+    def apply(self, player):
+        player.score += self.score_value
+        player.hearts += self.heart_value
+        player.anxiety += self.anxiety_value
+        player.paranoia += self.paranoia_value
+        player.adrenaline += self.adrenaline_value
         
     def reverse(self):
         self.vx = -1 * self.vx
@@ -523,6 +550,12 @@ class TerrorEnemy(MindSlimeEnemy):
     def __init__(self, x, y, images):
         super().__init__(x, y, images)
 
+        self.score_value = -10
+        self.heart_value = -1
+        self.anxiety_value = 5
+        self.paranoia_value = 0
+        self.adrenaline_value = 0
+
     ''' Override this function '''
     def move_and_check_tiles(self, level):
         #reverse = False
@@ -581,6 +614,12 @@ class StalkerEnemy(TerrorEnemy):
         self.step_rate = 6
         self.walk_index = 0
 
+        self.score_value = -10
+        self.heart_value = -2
+        self.anxiety_value = 5
+        self.paranoia_value = 5
+        self.adrenaline_value = 0
+
     # Prevent clipping
     def can_jump(self, tiles):
         self.rect.y += 2
@@ -614,37 +653,10 @@ class StalkerEnemy(TerrorEnemy):
         self.set_image()
 
 
-class NonkillableEnemy(pygame.sprite.Sprite):
+class RisingLava(pygame.sprite.Sprite):
     '''
     Non-killable enemy. Moves up as the Timer depletes.
     '''
-    def __init__(self, x, y, images):
-        super().__init__()
-
-        self.image = images
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-
-        self.vy = 2
-
-        self.steps = 0
-        self.step_rate = 1
-        self.walk_index = 0
-
-    # TODO: move with Timer
-    def move(self):
-        self.rect.y -= self.vy
-
-    def update(self):
-        self.move.update(self)
-    
-
-class SpikeEnemy(pygame.sprite.Sprite):
-    ''' 
-    This enemy just falls because it represents falling spikes.
-    '''
-    
     def __init__(self, x, y, images):
         super().__init__()
 
@@ -654,46 +666,74 @@ class SpikeEnemy(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-        self.vy = 0
+        # TODO: speed should be proportional to time left on Timers
+        self.vy = 1
 
         self.steps = 0
         self.step_rate = 1
         self.walk_index = 0
 
-    def move_and_check_tiles(self, level):
-        # Only vertical direction needs to be checked
-        self.rect.y += self.vy
-        hit_list = pygame.sprite.spritecollide(self, level.main_tiles, False)
+        self.score_value = 0
+        self.heart_value = -999
+        self.anxiety_value = 0
+        self.paranoia_value = 0
+        self.adrenaline_value = 0
 
-        for hit in hit_list:
-            if self.vy > 0:
-                self.rect.bottom = hit.rect.top
-            elif self.vy < 0:
-                self.rect.top = hit.rect.bottom
-
-            self.vy = 0
-
-    def apply_gravity(self, level):
-        self.vy += level.gravity
-
-        if self.vy > level.terminal_velocity:
-            self.vy = level.terminal_velocity
-
-    def step(self):
-        self.steps = (self.steps + 1) % self.step_rate
-
-        if self.steps == 0:
-            self.walk_index = (self.walk_index + 1) % len(self.images)
+    # Apply negative effects to Player upon collision (such as -Hearts)
+    def apply(self, player):
+        player.score += self.score_value
+        player.hearts += self.heart_value
+        player.anxiety += self.anxiety_value
+        player.paranoia += self.paranoia_value
+        player.adrenaline += self.adrenaline_value
+    
+    def move(self, level):
+        self.rect.y -= self.vy
 
     def set_image(self):
-        self.image = self.images[self.walk_index]
-        
+        self.image = self.images[0]
+
     def update(self, level):
-        self.move_and_check_tiles(level)
-        self.apply_gravity(level)
-        self.step()
+        self.move(level)
         self.set_image()
         
+
+class LavaHitbox(pygame.sprite.Sprite):
+    '''
+    This class simply provides a rect that the Player can collide with that 
+    is slightly raised or close to the RisingLava enemy type so that adrenaline may increase.
+    '''
+    
+    def __init__(self, x, y):
+        super().__init__()
+
+        self.rect = pygame.Rect(x, (y-100), 1280, 1)
+
+        self.vy = 1
+
+        self.steps = 0
+        self.step_rate = 1
+        self.walk_index = 0
+
+        self.score_value = 0
+        self.heart_value = 0
+        self.anxiety_value = 0
+        self.paranoia_value = 0
+        self.adrenaline_value = 5
+
+    def apply(self, player):
+        player.score += self.score_value
+        player.hearts += self.heart_value
+        player.anxiety += self.anxiety_value
+        player.paranoia += self.paranoia_value
+        player.adrenaline += self.adrenaline_value
+    
+    def move(self, level):
+        self.rect.y -= self.vy
+
+    def update(self, level):
+        self.move(level)
+
 
 ''' Items '''
 class Gem(pygame.sprite.Sprite):
@@ -713,17 +753,20 @@ class Gem(pygame.sprite.Sprite):
 
     def apply(self, player):
         gem_snd.play()
-        player.score += self.value
+        player.score += self.score_value
+        player.hearts += self.heart_value
+        player.anxiety += self.anxiety_value
+        player.paranoia += self.paranoia_value
         
     def update(self, level):
-        ''' No animation, so nothing needs to be updated '''
+        ''' No animation yet, so nothing needs to be updated '''
         pass
 
 
 class StressBall(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
-        super().__init__()
+        super().__init__(x, y, image)
 
         self.image = image
         self.rect = self.image.get_rect()
@@ -740,7 +783,7 @@ class StressBall(Gem):
 class CalmingGem(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
-        super().__init__()
+        super().__init__(x, y, image)
 
         self.image = image
         self.rect = self.image.get_rect()
@@ -757,7 +800,7 @@ class CalmingGem(Gem):
 class MagicStrawberry(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
-        super().__init__()
+        super().__init__(x, y, image)
 
         self.image = image
         self.rect = self.image.get_rect()
@@ -791,6 +834,7 @@ class Level():
         self.load_tiles()
         self.load_items()
         self.load_enemies()
+        self.load_hitboxes()
         self.load_goal()
         
         self.generate_layers()
@@ -821,6 +865,7 @@ class Level():
         path1 = self.map_data['background']['image1']
         path2 = self.map_data['background']['image2']
 
+        # If images defined in file does not exist, don't use a BG image
         if os.path.isfile(application_path + path1):
             self.bg_image1 = pygame.image.load(application_path + path1).convert_alpha()
         else:
@@ -842,6 +887,7 @@ class Level():
         for group_name in self.map_data['tiles']:
             tile_group = self.map_data['tiles'][group_name]
             
+            # Scale tiles based on size defined in level file
             for element in tile_group:
                 x = element[0] * self.scale
                 y = element[1] * self.scale
@@ -890,10 +936,23 @@ class Level():
                 s = TerrorEnemy(x, y, terror_enemy_images)
             elif kind == "Stalker":
                 s = StalkerEnemy(x, y, stalker_enemy_images)
-            elif kind == "Nonkillable":
-                s = NonkillableEnemy(x, y, nonkillable_enemy_images)
+            elif kind == "Rising_Lava":
+                s = RisingLava(x, y, nonkillable_enemy_images)
                 
             self.enemies.add(s)
+
+    def load_hitboxes(self):
+        self.hitboxes = pygame.sprite.Group()
+
+        for element in self.map_data['hitboxes']:
+            x = element[0] * self.scale
+            y = element[1] * self.scale
+            kind = element[2]
+
+            if kind == "Lava_Hitbox":
+                s = LavaHitbox(x, y)
+
+            self.hitboxes.add(s)
 
     def load_goal(self):
         g = self.map_data['layout']['goal']
@@ -963,18 +1022,33 @@ class Game():
         self.running = True
         self.levels = levels
         self.level_change_delay = 90
+        self.cleared_timer = self.level_change_delay
 
+        # Default time variables
         self.timer = 300
-        self.timer_count = 0
+        self.initial_time = self.timer
+        self.timer_count_time = 0
+        self.max_value_a_p = 100
     
     def setup(self):
+        # Create player
         self.player = Player(player_images)
         self.mc = pygame.sprite.GroupSingle()
         self.mc.add(self.player)
 
+        # Set stage and start loading first level
         self.stage = Game.START
         self.current_level = 1
         self.load_level()
+
+        # Retrieve High Score if it exists
+        if not os.path.exists(application_path + 'assets/high_score/high_score.txt'):
+            with open(application_path + '/assets/high_score/high_score.txt', 'w') as f:
+                f.write(str(self.player.high_score))
+            f.close()
+        high_score_file = open(application_path + '/assets/high_score/high_score.txt', 'r')
+        self.player.high_score = int(high_score_file.readline())
+        high_score_file.close()
 
     def load_level(self):
         # Track current level and update variables based on level data
@@ -983,14 +1057,20 @@ class Game():
         self.level = Level(level_data)
 
         self.timer = self.level.load_timer()
+        self.initial_time = self.timer
+        # Calculate the rate of increase for anxiety and paranoia
+        self.rate = self.max_value_a_p / (self.initial_time / 2)
 
         # Move Player to starting coordinates as defined in level file
         self.player.move_to(self.level.start_x, self.level.start_y)
         self.player.reached_goal = False
 
-        # Group sprites
+        # Group active sprites for drawing
         self.active_sprites = pygame.sprite.Group()
         self.active_sprites.add(self.player, self.level.items, self.level.enemies)
+
+        # Define hitbox for level's nonkillable object
+        self.hitbox = self.level.hitboxes
 
     def start_level(self):
         play_music()
@@ -1006,6 +1086,19 @@ class Game():
         else:
             self.stage = Game.WIN
             win_snd.play()
+
+    ''' Calculation for moving tiles based on Player position '''
+    def calculate_offset(self):
+        x = 0
+        y = -1 * self.player.rect.centery + SCREEN_HEIGHT / 2
+
+        ''' Vertical offset '''
+        if self.player.rect.centery < SCREEN_HEIGHT / 2:
+            y = 0
+        elif self.player.rect.centery > self.level.height - SCREEN_HEIGHT / 2:
+            y = -1 * self.level.height + SCREEN_HEIGHT
+
+        return round(x), round(y)
 
     ''' Screens '''
     def show_title_screen(self):
@@ -1041,7 +1134,7 @@ class Game():
         screen.blit(text2, rect2)
 
     def show_lose_screen(self):
-        text = font_lg.render("YOU HAVE DIED.", 1, RED, pygame.SRCALPHA)
+        text = font_lg.render("YOU ARE DEAD.", 1, RED, pygame.SRCALPHA)
         text2 = font_md.render("Press SPACE to play again or ESC to exit.", 1, WHITE, pygame.SRCALPHA)
         rect = text.get_rect()
         rect2 = text2.get_rect()
@@ -1062,9 +1155,12 @@ class Game():
 
     ''' HUD information '''
     def show_stats(self):
+        # Define number of pixels to evenly space the elements on the screen
+        spacing = SCREEN_WIDTH / 7
+
         level_str = "Level: " + str(self.current_level)
         
-        text1 = font_md.render(level_str, 1, YELLOW, pygame.SRCALPHA)
+        text1 = font_sm.render(level_str, 1, YELLOW, pygame.SRCALPHA)
         rect1 = text1.get_rect()
         rect1.left = 24
         rect1.top = 24
@@ -1072,35 +1168,84 @@ class Game():
     
         score_str = "Score: " + str(self.player.score)
         
-        text2 = font_md.render(score_str, 1, YELLOW, pygame.SRCALPHA)
+        text2 = font_sm.render(score_str, 1, YELLOW, pygame.SRCALPHA)
         rect2 = text2.get_rect()
-        rect2.right = (SCREEN_WIDTH / 2)
-        rect2.top = 24
+        rect2.left = 24
+        rect2.top = rect1.bottom + 10
         screen.blit(text2, rect2)
 
         timer_str = "Time: " + str(self.timer)
         
-        text3 = font_md.render(timer_str, 1, YELLOW, pygame.SRCALPHA)
+        text3 = font_sm.render(timer_str, 1, YELLOW, pygame.SRCALPHA)
         rect3 = text3.get_rect()
-        rect3.right = SCREEN_WIDTH - 23
+        rect3.right = SCREEN_WIDTH - 24
         rect3.top = 24
         screen.blit(text3, rect3)
 
-        # TODO: continue with displaying variables...
-        #...
-                   
-    ''' Calculation for moving tiles based on Player position '''
-    def calculate_offset(self):
-        x = 0
-        y = -1 * self.player.rect.centery + SCREEN_HEIGHT / 2
+        anxiety_str = "Anxiety: " + str(self.player.anxiety)
 
-        ''' Vertical offset '''
-        if self.player.rect.centery < SCREEN_HEIGHT / 2:
-            y = 0
-        elif self.player.rect.centery > self.level.height - SCREEN_HEIGHT / 2:
-            y = -1 * self.level.height + SCREEN_HEIGHT
+        text4 = font_sm.render(anxiety_str, 1, YELLOW, pygame.SRCALPHA)
+        rect4 = text4.get_rect()
+        rect4.left = (spacing * 3) - (rect4.width / 2)
+        rect4.top = 24
+        screen.blit(text4, rect4)
 
-        return round(x), round(y)
+        paranoia_str = "Paranoia: " + str(self.player.paranoia)
+
+        text5 = font_sm.render(paranoia_str, 1, YELLOW, pygame.SRCALPHA)
+        rect5 = text5.get_rect()
+        rect5.left = (spacing * 4) - (rect5.width / 2)
+        rect5.top = 24
+        screen.blit(text5, rect5)
+
+        focus_str = "Focus: " + str(self.player.focus)
+
+        text6 = font_sm.render(focus_str, 1, YELLOW, pygame.SRCALPHA)
+        rect6 = text6.get_rect()
+        rect6.left = (spacing * 5) - (rect6.width / 2)
+        rect6.top = 24
+        screen.blit(text6, rect6)
+
+        hearts_str = "Hearts: " + str(self.player.hearts)
+
+        text7 = font_sm.render(hearts_str, 1, YELLOW, pygame.SRCALPHA)
+        rect7 = text7.get_rect()
+        rect7.left = (spacing * 2) - (rect7.width / 2)
+        rect7.top = 24
+        screen.blit(text7, rect7)
+
+        high_score_str = "High Score: " + str(self.player.high_score)
+
+        text8 = font_sm.render(high_score_str, 1, YELLOW, pygame.SRCALPHA)
+        rect8 = text8.get_rect()
+        rect8.right = SCREEN_WIDTH - 24
+        rect8.top = rect3.bottom + 10
+        screen.blit(text8, rect8)
+
+    ''' Create different intensity vignette screen effect depending on anxiety level '''
+    def create_vignette(player):
+        # Can even add floating text with updates like, "Panic induced!" when Player controls are inversed
+        pass
+
+    ''' Create distractions and distortions on screen when paranoia high '''
+    def create_screen_artifacts(player):
+        # Change amount depending on how high paranoia is
+        pass
+
+    ''' Update player score with leftover time on timer '''
+    def update_final_score(self):
+        while self.timer > 0:
+            self.timer -= 1
+            self.player.score += 1
+            self.show_stats()
+
+    ''' Update high score function '''
+    def update_highscore(self):
+        if self.player.score >= self.player.high_score:
+            self.player.high_score = self.player.score
+
+        with open(application_path + '/assets/high_score/high_score.txt', 'w') as f:
+            f.write(str(self.player.high_score))
 
 
     ''' Input processing '''
@@ -1155,21 +1300,51 @@ class Game():
     def update(self):
         if self.stage == Game.PLAYING or self.stage == Game.DEBUG:
             self.active_sprites.update(self.level)
+            self.hitbox.update(self.level)
 
             # Update timer
-            self.timer_count += 1
-            if self.timer > 0 and self.timer_count == FPS:
+            self.timer_count_time += 1
+            if self.timer > 0 and self.timer_count_time == FPS:
                 self.timer -= 1
-                self.timer_count = 0
+                self.timer_count_time = 0
 
-            # TODO: Update anxiety, paranoia, focus, adrenaline. Conditions here.
+            # Calculate timer-based increase
+            timer_increase = self.rate * (self.initial_time - self.timer)
+
+            # Update anxiety and paranoia based on elapsed time
+            self.player.anxiety = (int)(min(self.max_value_a_p, timer_increase))
+            self.player.paranoia = (int)(min(self.max_value_a_p, timer_increase))
+
+            ''' TODO: WHY TF am I stuck???
+                NOTE: Give up for now. '''
+
+            # Update focus
+            if self.player.focus > 0 and self.player.focus < 101:
+                self.player.focus = (int)(100 - ((self.player.anxiety / 2) + (self.player.paranoia / 2)))
+
+            # If any variables are negative, change to 0 before updating display
+            # TODO: can move to own function
+            if self.player.score < 0:
+                self.player.score = 0
+            if self.player.hearts < 0:
+                self.player.hearts = 0
+            if self.player.anxiety < 0:
+                self.player.anxiety = 0
+            if self.player.paranoia < 0:
+                self.player.paranoia = 0
+            if self.player.focus < 0:
+                self.player.focus = 0
+            if self.player.focus > 100:
+                self.player.focus = 100
+
+            # Refresh HUD in case any variables were indeed below 0
+            self.show_stats()
 
             # End conditions
             if self.player.reached_goal:
                 stop_music()
                 self.stage = Game.CLEARED
-                self.cleared_timer = self.level_change_delay
-            elif self.player.hearts == 0 or self.timer == 0:
+            elif self.player.hearts <= 0 or self.timer <= 0:
                 self.stage = Game.LOSE
                 lose_snd.play()
                 stop_music()
@@ -1203,12 +1378,15 @@ class Game():
         self.show_stats()
         
         if self.stage == Game.START:
-            self.show_title_screen()        
+            self.show_title_screen()
         elif self.stage == Game.CLEARED:
+            self.update_final_score()
+            self.update_highscore()
             self.show_cleared_screen()
         elif self.stage == Game.WIN:
             self.show_win_screen()
         elif self.stage == Game.LOSE:
+            self.update_highscore()
             self.show_lose_screen()
         elif self.stage == Game.PAUSE:
             self.show_pause()

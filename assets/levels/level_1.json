@@ -2,7 +2,7 @@
 	"layout": {
 		"scale": 64,
 		"size": [20, 64],
-		"start": [1, 60],
+		"start": [1, 58],
 		"goal": [17, 2, 1, 1]
 	},
 
@@ -12,13 +12,13 @@
 	},
 
 	"timer": {
-		"time": 120
+		"time": 240
 	},
 
 	"music": "assets/music/Tower_Of_Repression_main_1.ogg",
 
 	"background": {
-		"color": [20, 62, 61],
+		"color": [115, 20, 22],
 		"image1": "assets/images/backgrounds/Sky.png",
 		"image2": "assets/images/backgrounds/Hills_2.png",
 		"parallax_speed1": 0.6,
@@ -31,60 +31,65 @@
 		],
 
 		"main": [
-			[0, 61, "Platform"],
-			[1, 61, "Platform"],
-			[2, 61, "Platform"],
-			[3, 61, "Platform"],
-			[4, 61, "Platform"],
-			[5, 61, "Platform"],
-			[6, 61, "Platform"],
-			[7, 61, "Platform"],
-			[8, 61, "Platform"],
-			[14, 61, "Platform"],
-			[15, 61, "Platform"],
-			[16, 61, "Platform"],
-			[17, 61, "Platform"],
-			[18, 61, "Platform"],
-			[19, 61, "Platform"],
-			[20, 61, "Platform"],
+			[0, 59, "Platform"],
+			[1, 59, "Platform"],
+			[2, 59, "Platform"],
+			[3, 59, "Platform"],
+			[4, 59, "Platform"],
+			[5, 59, "Platform"],
+			[6, 59, "Platform"],
+			[7, 59, "Platform"],
+			[8, 59, "Platform"],
+			[14, 59, "Platform"],
+			[15, 59, "Platform"],
+			[16, 59, "Platform"],
+			[17, 59, "Platform"],
+			[18, 59, "Platform"],
+			[19, 59, "Platform"],
+			[20, 59, "Platform"],
 
-			[10, 59, "Platform"],
-			[11, 59, "Platform"],
-			[12, 59, "Platform"]
+			[10, 57, "Platform"],
+			[11, 57, "Platform"],
+			[12, 57, "Platform"],
+
+			[4, 55, "Red_Platform"],
+			[5, 55, "Red_Platform"],
+			[6, 55, "Red_Platform"],
+			[7, 55, "Red_Platform"],
+
+			[10, 53, "Red_Platform"],
+			[11, 53, "Red_Platform"],
+			[12, 53, "Red_Platform"],
+			[13, 53, "Red_Platform"],
+
+			[14, 3, "Red_Platform"],
+			[15, 3, "Red_Platform"],
+			[16, 3, "Red_Platform"],
+			[17, 3, "Red_Platform"],
+			[18, 3, "Red_Platform"]
 		],
 
 		"foreground": [
-			[0, 63, "Lava"],
-			[1, 63, "Lava"],
-			[2, 63, "Lava"],
-			[3, 63, "Lava"],
-			[4, 63, "Lava"],
-			[5, 63, "Lava"],
-			[6, 63, "Lava"],
-			[7, 63, "Lava"],
-			[8, 63, "Lava"],
-			[9, 63, "Lava"],
-			[10, 63, "Lava"],
-			[11, 63, "Lava"],
-			[12, 63, "Lava"],
-			[13, 63, "Lava"],
-			[14, 63, "Lava"],
-			[15, 63, "Lava"],
-			[16, 63, "Lava"],
-			[17, 63, "Lava"],
-			[18, 63, "Lava"],
-			[19, 63, "Lava"],
-			[20, 63, "Lava"]
+		
 		]
 	},
 
 	"items": [
-
+		[5, 58, "Gem"],
+		[18, 58, "Magic_Strawberry"],
+		[11, 56, "Stress_Ball"],
+		[6, 54, "Calming_Gem"]
 	],
 
 	"enemies": [
-		[11, 58, "MindSlime"],
-		[7, 60, "Terror"],
-		[15, 60, "Stalker"]
+		[11, 56, "MindSlime"],
+		[7, 58, "Terror"],
+		[15, 58, "Stalker"],
+
+		[0, 63, "Rising_Lava"]
+	],
+
+	"hitboxes": [
+		[0, 63, "Lava_Hitbox"]
 	]
 }
