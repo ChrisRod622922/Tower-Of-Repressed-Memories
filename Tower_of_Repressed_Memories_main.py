@@ -38,6 +38,7 @@
 
     NOTE:
         -- Anxiety and paranoia max value = 100
+        -- Player speed now decreased by 25% when focus is below 75 and 50
              
 '''
 
@@ -200,6 +201,7 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
         self.speed = 10
+        self.initial_speed = self.speed
         self.jump_power = 26
         self.vx = 0
         self.vy = 0
@@ -398,16 +400,17 @@ class Player(pygame.sprite.Sprite):
 
     # Checks conditions for core variables that may affect player speed or produce screen artifacts
     def check_variables(self):
+        print("Player speed (check_var function): " + str(self.speed))
         ''' Conditions for anxiety, paranoia, focus thresholds '''
         # If anxiety is past a threshold, inverse player controls and invoke vignette screen effect
         if self.anxiety > 25 and self.anxiety < 75:
             self.inverse = False
             Game.create_vignette(self)
-        elif self.anxiety == 75:
+        elif self.anxiety > 75:
             self.inverse = True
 
         # If paranoia is past a threshold, randomly spawn fake items and screen artifacts
-        if self.paranoia == 25:
+        if self.paranoia > 25:
             Game.create_screen_artifacts(self)
 
         # If focus below a certain threshold, slow Player speed
@@ -415,14 +418,12 @@ class Player(pygame.sprite.Sprite):
             self.speed_timer -= 1
         else:
             # Speed timer used to accurately decrement player speed as described below
-            if self.focus == 50:
-                self.speed -= 2
+            if self.focus <= 25:
+                self.speed = self.initial_speed * 0.50
                 self.speed_timer = FPS
-                print("Focus dropped to 50! New speed: " + str(self.speed))
-            elif self.focus == 25:
-                self.speed -= 3
+            elif self.focus <= 50:
+                self.speed = self.initial_speed * 0.75
                 self.speed_timer = FPS
-                print("Focus dropped to 25! New speed: " + str(self.speed))
 
     def check_goal(self, level):
         self.reached_goal = level.goal.contains(self.rect)
@@ -722,7 +723,7 @@ class RisingLava(pygame.sprite.Sprite):
         player.paranoia += self.paranoia_value
         player.adrenaline += self.adrenaline_value
     
-    def move(self, total_time, initial_time):
+    def move(self, total_time, initial_time, level):
         # 234
 
         # Calculate elapsed time
@@ -736,7 +737,9 @@ class RisingLava(pygame.sprite.Sprite):
 
         # Calculate the offset based on normalized position
         offset = normalized_position * SCREEN_HEIGHT
-        ''' TODO: add multiplier to screen height corresponding to level scale, since way more than 720 pixels high '''
+        ''' TODO: add get_height() and get_tile_size() methods to level to use in new offset calculation.
+                  offset = normalized_position * (level.get_height() * level.get_tile_size())
+                  get_height = vertical height in tiles, get_tile_size() = size of each tile in pixels '''
 
         # Set the new y position relative to the initial position
         self.rect.y = int(self.initial_position - offset)
@@ -745,7 +748,7 @@ class RisingLava(pygame.sprite.Sprite):
         self.image = self.images[0]
 
     def update(self, total_time, initial_time, level):
-        self.move(total_time, initial_time)
+        self.move(total_time, initial_time, level)
         self.set_image()
         
 
@@ -772,9 +775,9 @@ class LavaHitbox(RisingLava):
 
         self.initial_position = y - 100
 
-    ''' Override update method '''
+    ''' Override update method to exclude set_image '''
     def update(self, total_time, initial_time, level):
-        self.move(total_time, initial_time)
+        self.move(total_time, initial_time, level)
 
 
 ''' Items '''
