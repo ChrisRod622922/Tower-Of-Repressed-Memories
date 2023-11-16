@@ -1,10 +1,8 @@
 # pylint: disable=import-error
 
-''' TODO: - TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
-          - Add menu option to toggle fullscreen mode
-          - ALL SPRITES/TILES ARE TEMPORARY: Replace sprites, fonts and sounds eventually
-          - Separate class modules into their own files
+''' NOTE:
           - Game class needs more code moved to dedicated functions!!
+          - TODO: If more levels added, logic for NK enemies will need to change. Do LAST if time
 '''
 
 ''' TODO:
@@ -13,18 +11,22 @@
           2. Add teleportation and follow ability for Stalkers
           3. Add screen effects and artifacts
           4. Add text updates on status effects (such as "Speed decreased due to lack of focus!")
-          5. Restart current level on death, instead of restarting game
-          6. TEST all functionality in test level.
-             Create Level 1 layout / loop music logic
-          7. Add background images and v. parallax
+          5. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
+          6. Add menu option to toggle fullscreen mode
+          7. FIX ITEM BUG (if can't fix, might need to discard)
+             (Try changing math for anxiety/paranoia & try to have them increase at a predetermined rate)
+          8. Add background images and v. parallax
              If possible, a fuzzy dreamlike animated BG would be awesome
-          8. Add fall damage
-          9. Continue with other levels
-         10. To-do list above
+          9. Restart current level on death, instead of restarting game
+             Create Level 1 layout / loop music logic
+         10. Add fall damage
          11. Display actual hearts for Hearts (instead of numbers)
-         12. Save points?
-         13. Add animated sprites (improved sprites) if time allows
-         14. (Opt.) Edit music and then try controlling tempo with Timer count
+         12. REPLACE SPRITES & SOUNDS
+             Add animated sprites (improved sprites) if time allows
+         13. CLEAN UP CODE / SEPARATE MODULES
+         14. Save points?
+         15. Continue with other levels
+         16. (Opt.) Edit music and then try controlling tempo with Timer count
 '''
 
 ''' TODO: LEVELS (planning):
@@ -43,8 +45,8 @@ import pygame
 import json
 import os
 import sys
-import random
 import time
+import random
 
 if getattr(sys, 'frozen', False):
     application_path = sys._MEIPASS + '/'
@@ -280,7 +282,7 @@ class Player(pygame.sprite.Sprite):
             self.adrenaline_timer -= 1
         else:
             self.speed += self.adrenaline
-            self.adrenaline_timer = (FPS * 5)
+            self.adrenaline_timer = (FPS * 3)
             self.adrenaline = 0
             
     # Movement and tile collision detection
@@ -391,11 +393,11 @@ class Player(pygame.sprite.Sprite):
             if self.focus == 50:
                 self.speed -= 2
                 self.speed_timer = FPS
-                print("Speed: " + str(self.speed))
+                #print("Speed: " + str(self.speed))
             elif self.focus == 25:
                 self.speed -= 3
                 self.speed_timer = FPS
-                print("Speed: " + str(self.speed))
+                #print("Speed: " + str(self.speed))
 
     def check_goal(self, level):
         self.reached_goal = level.goal.contains(self.rect)
@@ -422,7 +424,7 @@ class Player(pygame.sprite.Sprite):
         else:
             self.image = walk[self.walk_index]
             
-    def update(self, level):
+    def update(self, timer, initial_time, level):
         self.apply_gravity(level)
         self.move_and_check_tiles(level)
         self.check_world_edges(level)
@@ -527,7 +529,7 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
     def set_image(self):
         self.image = self.images[self.walk_index]
         
-    def update(self, level):
+    def update(self, timer, initial_time, level):
         self.should_reverse = False
         
         self.apply_gravity(level)
@@ -639,7 +641,7 @@ class StalkerEnemy(TerrorEnemy):
 
     ''' Override update function '''
     # TODO: update jump and follow functions
-    def update(self, level):
+    def update(self, timer, initial_time, level):
         self.should_reverse = False
         
         self.apply_gravity(level)
@@ -666,7 +668,7 @@ class RisingLava(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-        # TODO: speed should be proportional to time left on Timers
+        # Default speed
         self.vy = 1
 
         self.steps = 0
@@ -687,17 +689,27 @@ class RisingLava(pygame.sprite.Sprite):
         player.paranoia += self.paranoia_value
         player.adrenaline += self.adrenaline_value
     
-    def move(self, level):
-        self.rect.y -= self.vy
+    def move(self, timer, initial_time):
+        #self.rect.y -= self.vy
+
+        # Calculate remaining time
+        remaining_time = max(0, initial_time - pygame.time.get_ticks() / 1000)
+
+        # Calculate the speed based on the remaining time
+        #TODO: something has to be wrong with speed or position calculation. Above is accurate.
+        speed = 1 / timer
+
+        # Update the position
+        self.rect.y -= self.vy * speed * remaining_time
 
     def set_image(self):
         self.image = self.images[0]
 
-    def update(self, level):
-        self.move(level)
+    def update(self, timer, initial_time, level):
+        self.move(timer, initial_time)
         self.set_image()
         
-
+''' TODO: UPDATE HITBOX FOR LAVA ACCORDING TO MOVEMENT '''
 class LavaHitbox(pygame.sprite.Sprite):
     '''
     This class simply provides a rect that the Player can collide with that 
@@ -758,7 +770,7 @@ class Gem(pygame.sprite.Sprite):
         player.anxiety += self.anxiety_value
         player.paranoia += self.paranoia_value
         
-    def update(self, level):
+    def update(self, timer, initial_time, level):
         ''' No animation yet, so nothing needs to be updated '''
         pass
 
@@ -1069,7 +1081,8 @@ class Game():
         self.active_sprites = pygame.sprite.Group()
         self.active_sprites.add(self.player, self.level.items, self.level.enemies)
 
-        # Define hitbox for level's nonkillable object
+        # Define unkillable object hitbox for level
+        #TODO: will need conditions to load correct unkillable obj hitbox for each level
         self.hitbox = self.level.hitboxes
 
     def start_level(self):
@@ -1299,7 +1312,7 @@ class Game():
     ''' Update Game functions, sprites, and variables '''
     def update(self):
         if self.stage == Game.PLAYING or self.stage == Game.DEBUG:
-            self.active_sprites.update(self.level)
+            self.active_sprites.update(self.timer, self.initial_time, self.level)
             self.hitbox.update(self.level)
 
             # Update timer
