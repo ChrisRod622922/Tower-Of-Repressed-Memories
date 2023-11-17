@@ -400,7 +400,7 @@ class Player(pygame.sprite.Sprite):
 
     # Checks conditions for core variables that may affect player speed or produce screen artifacts
     def check_variables(self):
-        print("Player speed (check_var function): " + str(self.speed))
+        #print("Player speed (check_var function): " + str(self.speed))
         ''' Conditions for anxiety, paranoia, focus thresholds '''
         # If anxiety is past a threshold, inverse player controls and invoke vignette screen effect
         if self.anxiety > 25 and self.anxiety < 75:
@@ -690,7 +690,7 @@ class RisingLava(pygame.sprite.Sprite):
 
         # Handle case where images is None
         if images is None:
-            # Create invisible hitbox
+            # Create invisible hitbox (LavaHitbox class init)
             self.rect = pygame.Rect(x, (y-100), 1280, 1)
         else:
             self.images = images
@@ -713,8 +713,6 @@ class RisingLava(pygame.sprite.Sprite):
         self.paranoia_value = 0
         self.adrenaline_value = 0
 
-        self.initial_position = y
-
     # Apply negative effects to Player upon collision (such as -Hearts)
     def apply(self, player):
         player.score += self.score_value
@@ -722,27 +720,54 @@ class RisingLava(pygame.sprite.Sprite):
         player.anxiety += self.anxiety_value
         player.paranoia += self.paranoia_value
         player.adrenaline += self.adrenaline_value
+
     
     def move(self, total_time, initial_time, level):
         # 234
 
-        # Calculate elapsed time
+        # Calculate elapsed time since object created
         elapsed_time = pygame.time.get_ticks() / 1000 - initial_time
 
         # Ensure elapsed time is within the timer duration
         elapsed_time = min(elapsed_time, total_time)
 
-        # Calculate the normalized position (0 at the bottom, 1 at the top)
+        # Calculate normalized position (0 at the bottom, 1 at the top)
         normalized_position = elapsed_time / total_time
 
-        # Calculate the offset based on normalized position
-        offset = normalized_position * SCREEN_HEIGHT
-        ''' TODO: add get_height() and get_tile_size() methods to level to use in new offset calculation.
-                  offset = normalized_position * (level.get_height() * level.get_tile_size())
-                  get_height = vertical height in tiles, get_tile_size() = size of each tile in pixels '''
+        # Calculate the new y position as a proportion of the level height
+        level_height_pixels = level.get_height() * level.get_tile_size()
+        proportion = 0.8  # How much of level height object should cover
+        new_y = int(proportion * normalized_position * level_height_pixels)
+        
+        # Debug information
+        print("Height pixels:", level_height_pixels)
+        print("Proportion:", proportion)
+        print("Current rect.y:", self.rect.y)
+        print("Calculated new rect.y:", new_y)
+        print("Calculated new rect.y with max:", max(new_y, SCREEN_HEIGHT - self.rect.height))
+        print("---")
 
-        # Set the new y position relative to the initial position
-        self.rect.y = int(self.initial_position - offset)
+        # Calculate the speed factor (adjust as needed)
+        speed_factor = 0.2  # Adjust this value to control the speed
+
+        # Set new y position, ensuring it doesn't go below the bottom of the screen
+        self.rect.y = max(new_y, SCREEN_HEIGHT - self.rect.height)
+
+        # Apply speed factor
+        self.rect.y = int(self.rect.y * speed_factor)
+
+        ''' In main: 
+        # Calculate remaining time
+        remaining_time = max(0, initial_time - pygame.time.get_ticks() / 1000)
+
+        # Calculate the speed based on the remaining time
+        #TODO: something has to be wrong with speed or position calculation. Above is accurate.
+        speed = 1 / timer
+
+        # Update the position
+        self.rect.y -= self.vy * speed * remaining_time
+        '''
+        
 
     def set_image(self):
         self.image = self.images[0]
@@ -773,7 +798,7 @@ class LavaHitbox(RisingLava):
         self.paranoia_value = 0
         self.adrenaline_value = 5
 
-        self.initial_position = y - 100
+        self.rect = pygame.Rect(x, (y-100), 1280, 1)
 
     ''' Override update method to exclude set_image '''
     def update(self, total_time, initial_time, level):
@@ -1047,6 +1072,14 @@ class Level():
         self.midground_tiles.draw(self.inactive)
         self.main_tiles.draw(self.inactive)        
         self.foreground_tiles.draw(self.foreground)
+
+    # Return height of level in tiles
+    def get_height(self):
+        return self.height
+    
+    # Return tile size in pixels
+    def get_tile_size(self):
+        return self.scale
 
 
 ''' Game class '''
