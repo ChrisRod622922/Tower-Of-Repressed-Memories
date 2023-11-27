@@ -8,37 +8,36 @@
 ''' TODO:
           1. Add teleportation and follow ability for Stalkers
                 --- IN PROGRESS ---
-          2. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
-          3. Add screen effects and artifacts
-          4. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
-          5. Add menu option to toggle fullscreen mode
-          6. FIX ITEM BUG (if can't fix, might need to discard)
+          2. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
+          3. MAJOR BUG: Rising Lava
+          4. FIX ITEM BUG (if can't fix, might need to discard)
              (Try changing math for anxiety/paranoia & try to have them increase at a predetermined rate)
-          7. FIX LAVA BUG (moves before game actually starts -- probably has to do w/elapsed time via clock.ticks() )
-          8. Add background images and v. parallax
+          5. FIX LAVA tick BUG (moves before game actually starts -- probably has to do w/elapsed time via clock.ticks() )
+          6. Add background images and v. parallax
              If possible, a fuzzy dreamlike animated BG would be awesome
-          9. Restart current level on death, instead of restarting game
-             Create Level 1 layout / loop music logic
-         10. Add fall damage
-         11. Display actual hearts for Hearts (instead of numbers)
-         12. REPLACE SPRITES & SOUNDS
-             Add animated sprites (improved sprites) if time allows
+          7. Add screen effects and artifacts
+          8. REPLACE SPRITES & SOUNDS
+          9. Create Level 1 layout / loop music logic
+         10. Restart current level on death, instead of restarting game
+         11. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
+         12. Display actual hearts for Hearts (instead of numbers)
          13. CLEAN UP CODE / SEPARATE MODULES
              (Use CTRL+F to find leftover TODO's & print statements)
-         14. Save points?
-         15. Continue with other levels
-         16. (Opt.) Edit music and then try controlling tempo with Timer count
+         14. Continue with other levels (if time allows)
 '''
 
 ''' TODO: LEVELS (planning):
           NOTE: map out in Photoshop or other editor where you can use a grid
-          1. Escape from rising lava
+          1. Escape from rising lava (DEMO GOAL)
           2. Shrinking level (spikes closing in on sides of screen)
           3. Blocks randomly fall OR there are ice blocks; instakill enemy is simply this
 
     NOTE:
         -- Anxiety and paranoia max value = 100
         -- Player speed now decreased by 25% when focus is below 75 and 50
+        -- To implement Title Screen & exposition, create Stage TITLE, waiting for input SPACE (if no menu).
+           Increment a pages variable to page through exposition (follows Title, SPACE to proceed) until no more
+           pages (can just hard-code #). Then start level init and setup.
              
 '''
 
@@ -722,9 +721,9 @@ class RisingLava(pygame.sprite.Sprite):
         player.adrenaline += self.adrenaline_value
 
     
-    def move(self, total_time, initial_time, level):
+    def move(self, timer, initial_time, level):
         # 234
-
+        '''
         # Calculate elapsed time since object created
         elapsed_time = pygame.time.get_ticks() / 1000 - initial_time
 
@@ -755,8 +754,9 @@ class RisingLava(pygame.sprite.Sprite):
 
         # Apply speed factor
         self.rect.y = int(self.rect.y * speed_factor)
+        '''
 
-        ''' In main: 
+        ''' In main: '''
         # Calculate remaining time
         remaining_time = max(0, initial_time - pygame.time.get_ticks() / 1000)
 
@@ -766,7 +766,7 @@ class RisingLava(pygame.sprite.Sprite):
 
         # Update the position
         self.rect.y -= self.vy * speed * remaining_time
-        '''
+        
         
 
     def set_image(self):
@@ -1381,8 +1381,9 @@ class Game():
     ''' Update Game functions, sprites, and variables '''
     def update(self):
         if self.stage == Game.PLAYING or self.stage == Game.DEBUG:
-            self.active_sprites.update(self.initial_time, self.initial_NK_obj_time, self.level)
-            self.hitbox.update(self.initial_time, self.initial_NK_obj_time, self.level)
+            self.active_sprites.update(self.timer, self.initial_time, self.level)
+            #NOTE: change back if needed (self.initial_time, self.initial_NK_obj_time)
+            self.hitbox.update(self.timer, self.initial_time, self.level)
 
             # Update timer
             self.timer_count_time += 1
@@ -1410,6 +1411,8 @@ class Game():
                 self.player.score = 0
             if self.player.hearts < 0:
                 self.player.hearts = 0
+            if self.player.hearts > 5:
+                self.player.hearts = 5
             if self.player.anxiety < 0:
                 self.player.anxiety = 0
             if self.player.paranoia < 0:
