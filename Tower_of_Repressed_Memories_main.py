@@ -6,7 +6,7 @@
 '''
 
 ''' TODO:
-          1. Add teleportation and follow ability for Stalkers
+          1. Add jump and follow ability for Stalkers, then teleport ability
                 --- IN PROGRESS ---
           2. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
           3. MAJOR BUG: Rising Lava
