@@ -6,37 +6,38 @@
 '''
 
 ''' TODO:
-          1. Nonkillable enemies (e.g. Lava) need to move in proportion to Timer
-                    --- IN PROGRESS ---
-          2. Add teleportation and follow ability for Stalkers
-          3. Add screen effects and artifacts
-          4. Add text updates on status effects (such as "Speed decreased due to lack of focus!")
-          5. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
-          6. Add menu option to toggle fullscreen mode
-          7. FIX ITEM BUG (if can't fix, might need to discard)
+          1. Add jump and follow ability for Stalkers, then teleport ability
+                --- IN PROGRESS ---
+          2. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
+          3. MAJOR BUG: Rising Lava
+          4. FIX ITEM BUG (if can't fix, might need to discard)
              (Try changing math for anxiety/paranoia & try to have them increase at a predetermined rate)
-          8. Add background images and v. parallax
+          5. FIX LAVA tick BUG (moves before game actually starts -- probably has to do w/elapsed time via clock.ticks() )
+          6. Add background images and v. parallax
              If possible, a fuzzy dreamlike animated BG would be awesome
-          9. Restart current level on death, instead of restarting game
-             Create Level 1 layout / loop music logic
-         10. Add fall damage
-         11. Display actual hearts for Hearts (instead of numbers)
-         12. REPLACE SPRITES & SOUNDS
-             Add animated sprites (improved sprites) if time allows
+          7. Add screen effects and artifacts
+          8. REPLACE SPRITES & SOUNDS
+          9. Create Level 1 layout / loop music logic
+         10. Restart current level on death, instead of restarting game
+         11. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
+         12. Display actual hearts for Hearts (instead of numbers)
          13. CLEAN UP CODE / SEPARATE MODULES
-         14. Save points?
-         15. Continue with other levels
-         16. (Opt.) Edit music and then try controlling tempo with Timer count
+             (Use CTRL+F to find leftover TODO's & print statements)
+         14. Continue with other levels (if time allows)
 '''
 
 ''' TODO: LEVELS (planning):
           NOTE: map out in Photoshop or other editor where you can use a grid
-          1. Escape from rising lava
+          1. Escape from rising lava (DEMO GOAL)
           2. Shrinking level (spikes closing in on sides of screen)
           3. Blocks randomly fall OR there are ice blocks; instakill enemy is simply this
 
     NOTE:
         -- Anxiety and paranoia max value = 100
+        -- Player speed now decreased by 25% when focus is below 75 and 50
+        -- To implement Title Screen & exposition, create Stage TITLE, waiting for input SPACE (if no menu).
+           Increment a pages variable to page through exposition (follows Title, SPACE to proceed) until no more
+           pages (can just hard-code #). Then start level init and setup.
              
 '''
 
@@ -199,6 +200,7 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
         self.speed = 10
+        self.initial_speed = self.speed
         self.jump_power = 26
         self.vx = 0
         self.vy = 0
@@ -278,12 +280,32 @@ class Player(pygame.sprite.Sprite):
             self.vy = level.terminal_velocity
 
     def adrenaline_cooldown(self):
+        # Cooldown duration in seconds
+        cooldown_time_sec = 3
+
         if self.adrenaline_timer > 0:
             self.adrenaline_timer -= 1
         else:
+            # Store the original speed before applying adrenaline
+            original_speed = self.speed
+
+            # Increase player's speed by adrenaline
             self.speed += self.adrenaline
-            self.adrenaline_timer = (FPS * 3)
+
+            # Reset adrenaline timer
+            self.adrenaline_timer = (FPS * cooldown_time_sec)
+
+            # Schedule task to restore the original speed after the cooldown
+            pygame.time.set_timer(pygame.USEREVENT, (cooldown_time_sec * 1000), True)
+            pygame.event.post(pygame.event.Event(pygame.USEREVENT, {}))
+
+            # Reset adrenaline
             self.adrenaline = 0
+
+        # Check for the event to restore the original speed
+        for event in pygame.event.get():
+            if event.type == pygame.USEREVENT:
+                self.speed = original_speed
             
     # Movement and tile collision detection
     def move_and_check_tiles(self, level):
@@ -357,6 +379,10 @@ class Player(pygame.sprite.Sprite):
         hit_list = pygame.sprite.spritecollide(self, level.hitboxes, False)
         for hit in hit_list:
             hit.apply(self)
+            # If player adrenaline is greater than hitbox's adrenaline value, reset it to that value
+            for hitbox in level.hitboxes:
+                if self.adrenaline > hitbox.adrenaline_value:
+                    self.adrenaline = hitbox.adrenaline_value
             self.adrenaline_cooldown()
     
     # Screen edges collision detection
@@ -373,16 +399,17 @@ class Player(pygame.sprite.Sprite):
 
     # Checks conditions for core variables that may affect player speed or produce screen artifacts
     def check_variables(self):
+        #print("Player speed (check_var function): " + str(self.speed))
         ''' Conditions for anxiety, paranoia, focus thresholds '''
         # If anxiety is past a threshold, inverse player controls and invoke vignette screen effect
         if self.anxiety > 25 and self.anxiety < 75:
             self.inverse = False
             Game.create_vignette(self)
-        elif self.anxiety == 75:
+        elif self.anxiety > 75:
             self.inverse = True
 
         # If paranoia is past a threshold, randomly spawn fake items and screen artifacts
-        if self.paranoia == 25:
+        if self.paranoia > 25:
             Game.create_screen_artifacts(self)
 
         # If focus below a certain threshold, slow Player speed
@@ -390,14 +417,12 @@ class Player(pygame.sprite.Sprite):
             self.speed_timer -= 1
         else:
             # Speed timer used to accurately decrement player speed as described below
-            if self.focus == 50:
-                self.speed -= 2
+            if self.focus <= 25:
+                self.speed = self.initial_speed * 0.50
                 self.speed_timer = FPS
-                #print("Speed: " + str(self.speed))
-            elif self.focus == 25:
-                self.speed -= 3
+            elif self.focus <= 50:
+                self.speed = self.initial_speed * 0.75
                 self.speed_timer = FPS
-                #print("Speed: " + str(self.speed))
 
     def check_goal(self, level):
         self.reached_goal = level.goal.contains(self.rect)
@@ -424,7 +449,7 @@ class Player(pygame.sprite.Sprite):
         else:
             self.image = walk[self.walk_index]
             
-    def update(self, timer, initial_time, level):
+    def update(self, total_time, initial_time, level):
         self.apply_gravity(level)
         self.move_and_check_tiles(level)
         self.check_world_edges(level)
@@ -529,7 +554,7 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
     def set_image(self):
         self.image = self.images[self.walk_index]
         
-    def update(self, timer, initial_time, level):
+    def update(self, total_time, initial_time, level):
         self.should_reverse = False
         
         self.apply_gravity(level)
@@ -662,11 +687,17 @@ class RisingLava(pygame.sprite.Sprite):
     def __init__(self, x, y, images):
         super().__init__()
 
-        self.images = images
-        self.image = images[0]
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        # Handle case where images is None
+        if images is None:
+            # Create invisible hitbox (LavaHitbox class init)
+            self.rect = pygame.Rect(x, (y-100), 1280, 1)
+        else:
+            self.images = images
+            self.image = images[0]
+            self.rect = self.image.get_rect()
+
+            self.rect.x = x
+            self.rect.y = y
 
         # Default speed
         self.vy = 1
@@ -688,10 +719,44 @@ class RisingLava(pygame.sprite.Sprite):
         player.anxiety += self.anxiety_value
         player.paranoia += self.paranoia_value
         player.adrenaline += self.adrenaline_value
-    
-    def move(self, timer, initial_time):
-        #self.rect.y -= self.vy
 
+    
+    def move(self, timer, initial_time, level):
+        # 234
+        '''
+        # Calculate elapsed time since object created
+        elapsed_time = pygame.time.get_ticks() / 1000 - initial_time
+
+        # Ensure elapsed time is within the timer duration
+        elapsed_time = min(elapsed_time, total_time)
+
+        # Calculate normalized position (0 at the bottom, 1 at the top)
+        normalized_position = elapsed_time / total_time
+
+        # Calculate the new y position as a proportion of the level height
+        level_height_pixels = level.get_height() * level.get_tile_size()
+        proportion = 0.8  # How much of level height object should cover
+        new_y = int(proportion * normalized_position * level_height_pixels)
+        
+        # Debug information
+        print("Height pixels:", level_height_pixels)
+        print("Proportion:", proportion)
+        print("Current rect.y:", self.rect.y)
+        print("Calculated new rect.y:", new_y)
+        print("Calculated new rect.y with max:", max(new_y, SCREEN_HEIGHT - self.rect.height))
+        print("---")
+
+        # Calculate the speed factor (adjust as needed)
+        speed_factor = 0.2  # Adjust this value to control the speed
+
+        # Set new y position, ensuring it doesn't go below the bottom of the screen
+        self.rect.y = max(new_y, SCREEN_HEIGHT - self.rect.height)
+
+        # Apply speed factor
+        self.rect.y = int(self.rect.y * speed_factor)
+        '''
+
+        ''' In main: '''
         # Calculate remaining time
         remaining_time = max(0, initial_time - pygame.time.get_ticks() / 1000)
 
@@ -701,25 +766,25 @@ class RisingLava(pygame.sprite.Sprite):
 
         # Update the position
         self.rect.y -= self.vy * speed * remaining_time
+        
+        
 
     def set_image(self):
         self.image = self.images[0]
 
-    def update(self, timer, initial_time, level):
-        self.move(timer, initial_time)
+    def update(self, total_time, initial_time, level):
+        self.move(total_time, initial_time, level)
         self.set_image()
         
-''' TODO: UPDATE HITBOX FOR LAVA ACCORDING TO MOVEMENT '''
-class LavaHitbox(pygame.sprite.Sprite):
+
+class LavaHitbox(RisingLava):
     '''
     This class simply provides a rect that the Player can collide with that 
     is slightly raised or close to the RisingLava enemy type so that adrenaline may increase.
     '''
     
     def __init__(self, x, y):
-        super().__init__()
-
-        self.rect = pygame.Rect(x, (y-100), 1280, 1)
+        super().__init__(x, y, images=None)
 
         self.vy = 1
 
@@ -733,18 +798,11 @@ class LavaHitbox(pygame.sprite.Sprite):
         self.paranoia_value = 0
         self.adrenaline_value = 5
 
-    def apply(self, player):
-        player.score += self.score_value
-        player.hearts += self.heart_value
-        player.anxiety += self.anxiety_value
-        player.paranoia += self.paranoia_value
-        player.adrenaline += self.adrenaline_value
-    
-    def move(self, level):
-        self.rect.y -= self.vy
+        self.rect = pygame.Rect(x, (y-100), 1280, 1)
 
-    def update(self, level):
-        self.move(level)
+    ''' Override update method to exclude set_image '''
+    def update(self, total_time, initial_time, level):
+        self.move(total_time, initial_time, level)
 
 
 ''' Items '''
@@ -770,7 +828,7 @@ class Gem(pygame.sprite.Sprite):
         player.anxiety += self.anxiety_value
         player.paranoia += self.paranoia_value
         
-    def update(self, timer, initial_time, level):
+    def update(self, total_time, initial_time, level):
         ''' No animation yet, so nothing needs to be updated '''
         pass
 
@@ -1015,6 +1073,14 @@ class Level():
         self.main_tiles.draw(self.inactive)        
         self.foreground_tiles.draw(self.foreground)
 
+    # Return height of level in tiles
+    def get_height(self):
+        return self.height
+    
+    # Return tile size in pixels
+    def get_tile_size(self):
+        return self.scale
+
 
 ''' Game class '''
 class Game():
@@ -1047,6 +1113,9 @@ class Game():
         self.player = Player(player_images)
         self.mc = pygame.sprite.GroupSingle()
         self.mc.add(self.player)
+
+        # Initialize time when NK object begins moving (e.g. RisingLava)
+        self.initial_NK_obj_time = pygame.time.get_ticks() / 1000
 
         # Set stage and start loading first level
         self.stage = Game.START
@@ -1313,7 +1382,8 @@ class Game():
     def update(self):
         if self.stage == Game.PLAYING or self.stage == Game.DEBUG:
             self.active_sprites.update(self.timer, self.initial_time, self.level)
-            self.hitbox.update(self.level)
+            #NOTE: change back if needed (self.initial_time, self.initial_NK_obj_time)
+            self.hitbox.update(self.timer, self.initial_time, self.level)
 
             # Update timer
             self.timer_count_time += 1
@@ -1341,6 +1411,8 @@ class Game():
                 self.player.score = 0
             if self.player.hearts < 0:
                 self.player.hearts = 0
+            if self.player.hearts > 5:
+                self.player.hearts = 5
             if self.player.anxiety < 0:
                 self.player.anxiety = 0
             if self.player.paranoia < 0:
