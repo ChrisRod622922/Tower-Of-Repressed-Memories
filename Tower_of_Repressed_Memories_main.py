@@ -6,10 +6,12 @@
 '''
 
 ''' TODO:
+          TODO: FIX FONT NOT LOADING ON SOC MACHINE BEFORE TURNING IN OR ELSE IT WON'T RUN!!!!!!!!!!!!!!!!!!!
+                WORST CASE, I DITCH THE FONTS
           1. Add jump and follow ability for Stalkers, then teleport ability
                 --- IN PROGRESS ---
           2. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
-          3. MAJOR BUG: Rising Lava
+          3. MAJOR BUG: Rising Lava (trying reset of game clock in start_level()... )
           4. FIX ITEM BUG (if can't fix, might need to discard)
              (Try changing math for anxiety/paranoia & try to have them increase at a predetermined rate)
           5. FIX LAVA tick BUG (moves before game actually starts -- probably has to do w/elapsed time via clock.ticks() )
@@ -18,11 +20,11 @@
           7. Add screen effects and artifacts
           8. REPLACE SPRITES & SOUNDS
           9. Create Level 1 layout / loop music logic
-         10. Restart current level on death, instead of restarting game
-         11. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
-         12. Display actual hearts for Hearts (instead of numbers)
-         13. CLEAN UP CODE / SEPARATE MODULES
+         10. CLEAN UP CODE / SEPARATE MODULES
              (Use CTRL+F to find leftover TODO's & print statements)
+         11. Restart current level on death, instead of restarting game
+         12. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
+         13. Display actual hearts for Hearts (instead of numbers)
          14. Continue with other levels (if time allows)
 '''
 
@@ -101,8 +103,8 @@ def unpause_music():
 TRANSPARENT = (0, 0, 0, 0)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
-GRAY = (200, 200, 200)
 RED = (255, 0, 0)
+DARK_RED = (206, 0, 6)
 YELLOW = (255, 255, 0)
 TURQUOISE = (0, 255, 255)
 BLUE = (0, 64, 255)
@@ -1093,6 +1095,7 @@ class Game():
     LOSE = 4
     PAUSE = 5
     DEBUG = 6
+    EXPOSITION = 7
 
     def __init__(self, levels):
         # Initial variables
@@ -1107,6 +1110,21 @@ class Game():
         self.initial_time = self.timer
         self.timer_count_time = 0
         self.max_value_a_p = 100
+
+        # Define variables to track page of exposition
+        self.page = 0
+        self.max_pages = 1
+
+    def start_exposition(self):
+        intro_screen = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
+        pygame.draw.rect(screen, BLACK, intro_screen)
+        pygame.display.flip()
+
+        self.stage = Game.EXPOSITION
+
+        if self.page == 1:
+            self.expos_screen_1()
+            # next screen...
     
     def setup(self):
         # Create player
@@ -1118,7 +1136,7 @@ class Game():
         self.initial_NK_obj_time = pygame.time.get_ticks() / 1000
 
         # Set stage and start loading first level
-        self.stage = Game.START
+        #self.stage = Game.START
         self.current_level = 1
         self.load_level()
 
@@ -1155,6 +1173,8 @@ class Game():
         self.hitbox = self.level.hitboxes
 
     def start_level(self):
+        # Reset game clock
+        #self.clock = pygame.time.Clock()
         play_music()
         self.stage = Game.PLAYING
             
@@ -1228,12 +1248,24 @@ class Game():
         screen.blit(text2, rect2)
 
     def show_pause(self):
-        t1 = font_lg.render("PAUSED", True, WHITE, pygame.SRCALPHA)
+        t1 = font_lg.render("PAUSED", 1, WHITE, pygame.SRCALPHA)
         t2 = font_md.render("(Press SPACE to resume.)", True, YELLOW, pygame.SRCALPHA)
         w1 = t1.get_width()
         w2 = t2.get_width()
         screen.blit(t1, [SCREEN_WIDTH/2 - w1/2, 330])
         screen.blit(t2, [SCREEN_WIDTH/2 - w2/2, 380])
+
+    def expos_screen_1(self):
+        text = font_md.render("You wake up in a dream.", 1, DARK_RED, pygame.SRCALPHA)
+        text2 = font_sm.render("Press SPACE to continue.", 1, WHITE, pygame.SRCALPHA)
+        rect = text.get_rect()
+        rect2 = text2.get_rect()
+        rect.centerx = SCREEN_WIDTH // 2
+        rect.centery = SCREEN_HEIGHT // 2
+        rect.centerx = SCREEN_WIDTH // 2
+        rect.centery = SCREEN_HEIGHT - 50
+        screen.blit(text, rect)
+        screen.blit(text2, rect2)
 
     ''' HUD information '''
     def show_stats(self):
@@ -1331,18 +1363,25 @@ class Game():
 
 
     ''' Input processing '''
-    def process_input(self):     
+    ''' TODO: time to restructure process/drawing logic... '''
+    def process_input(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
-                
-                if self.stage == Game.START:
+
+                if self.stage == Game.EXPOSITION:
+                    if event.key == pygame.K_SPACE:
+                        self.page += 1
+                        if self.page > self.max_pages:
+                            self.stage = Game.START
+
+                elif self.stage == Game.START:
                     if event.key == pygame.K_SPACE:
                         self.start_level()
-                        
+
                 elif self.stage == Game.PLAYING:
                     if event.key == pygame.K_UP:
                         self.player.jump(self.level.main_tiles)
@@ -1355,14 +1394,14 @@ class Game():
                         ''' Debug Mode '''
                         self.stage = Game.DEBUG
 
-                elif self.stage == Game.PAUSE:
-                    if event.key == pygame.K_SPACE:
-                        self.stage = Game.PLAYING
-                        unpause_music()
+                    elif self.stage == Game.PAUSE:
+                        if event.key == pygame.K_SPACE:
+                            self.stage = Game.PLAYING
+                            unpause_music()
 
-                elif self.stage == Game.WIN or self.stage == Game.LOSE:
-                    if event.key == pygame.K_SPACE:
-                        self.setup()
+                    elif self.stage == Game.WIN or self.stage == Game.LOSE:
+                        if event.key == pygame.K_SPACE:
+                            self.setup()
 
         pressed = pygame.key.get_pressed()
         
@@ -1443,26 +1482,28 @@ class Game():
             
     ''' Draw tiles, sprites, screens '''
     def render(self):
-        self.level.active.fill([0, 0, 0, 0])
-        self.active_sprites.draw(self.level.active)
+        if self.stage == Game.START or self.stage == Game.DEBUG:
+            self.level.active.fill([0, 0, 0, 0])
+            self.active_sprites.draw(self.level.active)
 
-        offset_x, offset_y = self.calculate_offset()
-        bg1_offset_x = -1 * offset_x * self.level.parallax_speed1
-        bg1_offset_y = -1 * offset_y * self.level.parallax_speed1
-        bg2_offset_x = -1 * offset_x * self.level.parallax_speed2
-        bg2_offset_y = -1 * offset_y * self.level.parallax_speed2
+            offset_x, offset_y = self.calculate_offset()
+            bg1_offset_x = -1 * offset_x * self.level.parallax_speed1
+            bg1_offset_y = -1 * offset_y * self.level.parallax_speed1
+            bg2_offset_x = -1 * offset_x * self.level.parallax_speed2
+            bg2_offset_y = -1 * offset_y * self.level.parallax_speed2
+            
+            self.level.world.blit(self.level.background1, [bg1_offset_x, bg1_offset_y])
+            self.level.world.blit(self.level.background2, [bg2_offset_x, bg2_offset_y])
+            self.level.world.blit(self.level.inactive, [0, 0])
+            self.level.world.blit(self.level.active, [0, 0])
+            self.level.world.blit(self.level.foreground, [0, 0])                  
+
+            screen.blit(self.level.world, [offset_x, offset_y])
+
+            self.show_stats()
         
-        self.level.world.blit(self.level.background1, [bg1_offset_x, bg1_offset_y])
-        self.level.world.blit(self.level.background2, [bg2_offset_x, bg2_offset_y])
-        self.level.world.blit(self.level.inactive, [0, 0])
-        self.level.world.blit(self.level.active, [0, 0])
-        self.level.world.blit(self.level.foreground, [0, 0])                  
-
-        screen.blit(self.level.world, [offset_x, offset_y])
-
-        self.show_stats()
-        
-        if self.stage == Game.START:
+        # Draw screens
+        if self.stage == Game.EXPOSITION:
             self.show_title_screen()
         elif self.stage == Game.CLEARED:
             self.update_final_score()
@@ -1490,6 +1531,7 @@ class Game():
 # Main
 if __name__ == "__main__":
     g = Game(levels)
+    g.start_exposition()
     g.setup()
     g.run()
     
