@@ -18,7 +18,7 @@
 	"music": "assets/music/Tower_Of_Repression_main_1.ogg",
 
 	"background": {
-		"color": [115, 20, 22],
+		"color": [75, 55, 94],
 		"image1": "assets/images/backgrounds/Sky.png",
 		"image2": "assets/images/backgrounds/Hills_2.png",
 		"parallax_speed1": 0.6,
@@ -31,45 +31,47 @@
 		],
 
 		"main": [
-			[0, 59, "Platform"],
-			[1, 59, "Platform"],
-			[2, 59, "Platform"],
-			[3, 59, "Platform"],
-			[4, 59, "Platform"],
-			[5, 59, "Platform"],
-			[6, 59, "Platform"],
-			[7, 59, "Platform"],
-			[8, 59, "Platform"],
-			[14, 59, "Platform"],
-			[15, 59, "Platform"],
-			[16, 59, "Platform"],
-			[17, 59, "Platform"],
-			[18, 59, "Platform"],
-			[19, 59, "Platform"],
-			[20, 59, "Platform"],
+			[0, 59, "Main_Block_M"],
+			[1, 59, "Main_Block_M"],
+			[2, 59, "Main_Block_M"],
+			[3, 59, "Main_Block_M"],
+			[4, 59, "Main_Block_M"],
+			[5, 59, "Main_Block_M"],
+			[6, 59, "Main_Block_M"],
+			[7, 59, "Main_Block_M"],
+			[8, 59, "Main_Block_M"],
+			[14, 59, "Main_Block_M"],
+			[15, 59, "Main_Block_M"],
+			[16, 59, "Main_Block_M"],
+			[17, 59, "Main_Block_M"],
+			[18, 59, "Main_Block_M"],
+			[19, 59, "Main_Block_M"],
+			[20, 59, "Main_Block_M"],
 
-			[10, 57, "Platform"],
-			[11, 57, "Platform"],
-			[12, 57, "Platform"],
+			[10, 57, "Small_Block_L"],
+			[11, 57, "Small_Block_M"],
+			[12, 57, "Small_Block_R"],
 
-			[4, 55, "Red_Platform"],
-			[5, 55, "Red_Platform"],
-			[6, 55, "Red_Platform"],
-			[7, 55, "Red_Platform"],
+			[4, 55, "Small_Block_L"],
+			[5, 55, "Small_Block_M"],
+			[6, 55, "Small_Block_M"],
+			[7, 55, "Small_Block_R"],
 
-			[10, 53, "Red_Platform"],
-			[11, 53, "Red_Platform"],
-			[12, 53, "Red_Platform"],
-			[13, 53, "Red_Platform"],
+			[10, 53, "Small_Block_L"],
+			[11, 53, "Small_Block_M"],
+			[12, 53, "Small_Block_M"],
+			[13, 53, "Small_Block_R"],
 
-			[15, 51, "Red_Platform"],
-			[16, 51, "Red_Platform"],
-			[17, 51, "Red_Platform"],
-			[18, 51, "Red_Platform"]
+			[15, 51, "Small_Block_L"],
+			[16, 51, "Small_Block_M"],
+			[17, 51, "Small_Block_M"],
+			[18, 51, "Small_Block_R"]
 		],
 
 		"foreground": [
-		
+			[7, 58, "Sign"],
+			[11, 52, "Lamp"],
+			[18, 58, "Crate"]
 		]
 	},
 

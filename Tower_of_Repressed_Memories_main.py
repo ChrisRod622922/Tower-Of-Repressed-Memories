@@ -2,10 +2,16 @@
 
 ''' NOTE:
           - Game class needs more code moved to dedicated functions!!
-          - TODO: If more levels added, logic for NK enemies will need to change. Do LAST if time
+
+          Right now: change sprites, fix item bug (decrement instead), finish enemy classes (& figure out how to get lava
+                     to draw over foreground! Might need to ungroup from active??), finish lv1 (new layout --
+                     try to incorporate all assets), parallax (8 images: change Level class code), modulalize code/cleanup,
+                     game art/whatever else for turn in...
+                     If time allows, ADD STATUS EFFECT UPDATES (like when collide w/enemy, dir. is reversed, etc.)
+          NOTE: if I run out of time to fix Lava class, change all the update function param. back to normal
 '''
 
-''' TODO:
+''' TODO (move to .md file in separate module folder. "To-dos" or "planning" i.e.):
           1. Add jump and follow ability for Stalkers, then teleport ability
                 --- IN PROGRESS ---
           2. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
@@ -13,17 +19,13 @@
           4. FIX ITEM BUG (if can't fix, might need to discard)
              (Try changing math for anxiety/paranoia & try to have them increase at a predetermined rate)
           5. FIX LAVA tick BUG (moves before game actually starts -- probably has to do w/elapsed time via clock.ticks() )
-          6. Add background images and v. parallax
-             If possible, a fuzzy dreamlike animated BG would be awesome
-          7. Add screen effects and artifacts
-          8. REPLACE SPRITES & SOUNDS
-          9. Create Level 1 layout / loop music logic
-         10. Restart current level on death, instead of restarting game
-         11. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
-         12. Display actual hearts for Hearts (instead of numbers)
-         13. CLEAN UP CODE / SEPARATE MODULES
+          6. Add screen effects and artifacts
+          7. Restart current level on death, instead of restarting game
+          8. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
+          9. Display actual hearts for Hearts (instead of numbers)
+         10. CLEAN UP CODE / SEPARATE MODULES
              (Use CTRL+F to find leftover TODO's & print statements)
-         14. Continue with other levels (if time allows)
+         11. Continue with other levels (if time allows)
 '''
 
 ''' TODO: LEVELS (planning):
@@ -146,11 +148,18 @@ player_images = { "idle_rt": idle,
                 "jump_lt": flip_image(jump),
                 "hurt_lt": flip_image(hurt) }
              
-tile_images = { "Grass": load_image('assets/images/tiles/platformPack_tile001.png'),
-                "Platform": load_image('assets/images/tiles/platformPack_tile041.png'),
-                "Red_Platform": load_image('assets/images/tiles/platformPack_tile020.png'),
-                "Sand": load_image('assets/images/tiles/platformPack_tile002.png'),
-                "Dirt": load_image('assets/images/tiles/platformPack_tile004.png'),
+tile_images = { "Main_Block_L": load_image('assets/images/tiles/BlockL.png'),
+                "Main_Block_M": load_image('assets/images/tiles/BlockM.png'),
+                "Main_Block_R": load_image('assets/images/tiles/BlockR.png'),
+                "Small_Block_L": load_image('assets/images/tiles/SmallL.png'),
+                "Small_Block_M": load_image('assets/images/tiles/BlockSmallM.png'),
+                "Small_Block_R": load_image('assets/images/tiles/SmallR.png'),
+                "Small_Block_Single": load_image('assets/images/tiles/BlockSmall.png'),
+                "Crate": load_image('assets/images/tiles/Crate.png'),
+                "Portal": load_image('assets/images/tiles/platformPack_tile057.png'),
+                "Sign": load_image('assets/images/tiles/SignBoard.png'),
+                "Water_Surface": load_image('assets/images/tiles/Water3.png'),
+                "Water": load_image('assets/images/tiles/Water4.png'),
                 "Lava_Surface": load_image('assets/images/tiles/platformPack_tile006.png'),
                 "Lava": load_image('assets/images/tiles/platformPack_tile018.png'),
                 "Lamp": load_image('assets/images/tiles/lamp.png'),
@@ -164,6 +173,8 @@ terror_enemy_images = [ load_image('assets/images/enemy/platformPack_tile011a.pn
 
 stalker_enemy_images = [ load_image('assets/images/enemy/platformPack_tile044.png'),
                           load_image('assets/images/enemy/platformPack_tile044.png') ]
+
+spikes_enemy_images = [ load_image('assets/images/tiles/Spikes.png') ]
 
 nonkillable_enemy_images = [ load_image('assets/images/enemy/Lava.png') ]
 
@@ -280,6 +291,7 @@ class Player(pygame.sprite.Sprite):
             self.vy = level.terminal_velocity
 
     def adrenaline_cooldown(self):
+        print("Speed: " + str(self.speed))
         # Cooldown duration in seconds
         cooldown_time_sec = 3
 
@@ -680,6 +692,45 @@ class StalkerEnemy(TerrorEnemy):
         self.set_image()
 
 
+class SpikeEnemy(pygame.sprite.Sprite):
+    '''
+    This enemy type does not move & merely serves as an obstacle.
+    '''
+    
+    def __init__(self, x, y, images):
+        super().__init__()
+
+        self.images = images
+        self.image = images[0]
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+        self.steps = 0
+        self.step_rate = 6
+        self.walk_index = 0
+
+        self.score_value = -5
+        self.heart_value = -1
+        self.anxiety_value = 2
+        self.paranoia_value = 0
+        self.adrenaline_value = 0
+
+    # Apply negative effects to Player upon collision (such as -Hearts)
+    def apply(self, player):
+        player.score += self.score_value
+        player.hearts += self.heart_value
+        player.anxiety += self.anxiety_value
+        player.paranoia += self.paranoia_value
+        player.adrenaline += self.adrenaline_value
+
+    def set_image(self):
+        self.image = self.images[self.walk_index]
+        
+    def update(self, total_time, initial_time, level):            
+        self.set_image()
+
+
 class RisingLava(pygame.sprite.Sprite):
     '''
     Non-killable enemy. Moves up as the Timer depletes.
@@ -1006,6 +1057,8 @@ class Level():
                 s = TerrorEnemy(x, y, terror_enemy_images)
             elif kind == "Stalker":
                 s = StalkerEnemy(x, y, stalker_enemy_images)
+            elif kind == "Spikes":
+                s = SpikeEnemy(x, y, spikes_enemy_images)
             elif kind == "Rising_Lava":
                 s = RisingLava(x, y, nonkillable_enemy_images)
                 
@@ -1456,7 +1509,7 @@ class Game():
         self.level.world.blit(self.level.background2, [bg2_offset_x, bg2_offset_y])
         self.level.world.blit(self.level.inactive, [0, 0])
         self.level.world.blit(self.level.active, [0, 0])
-        self.level.world.blit(self.level.foreground, [0, 0])                  
+        self.level.world.blit(self.level.foreground, [0, 0])
 
         screen.blit(self.level.world, [offset_x, offset_y])
 
