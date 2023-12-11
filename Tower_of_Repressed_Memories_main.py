@@ -328,6 +328,8 @@ class Player(pygame.sprite.Sprite):
             # Increase player's speed by adrenaline
             self.speed += self.adrenaline
 
+            print("New speed: " + str(self.speed))
+
             # Reset adrenaline timer
             self.adrenaline_timer = (FPS * cooldown_time_sec)
 
@@ -342,6 +344,7 @@ class Player(pygame.sprite.Sprite):
         for event in pygame.event.get():
             if event.type == pygame.USEREVENT:
                 self.speed = original_speed
+                print("Speed after cooldown: " + str(self.speed))
             
     # Movement and tile collision detection
     def move_and_check_tiles(self, level):
@@ -1467,15 +1470,14 @@ class Game():
                 self.timer -= 1
                 self.timer_count_time = 0
 
-            # Calculate timer-based increase
-            timer_increase = self.rate * (self.initial_time - self.timer)
+                self.player.anxiety += int(self.rate)
+                self.player.paranoia += int(self.rate)
 
-            # Update anxiety and paranoia based on elapsed time
-            self.player.anxiety = (int)(min(self.max_value_a_p, timer_increase))
-            self.player.paranoia = (int)(min(self.max_value_a_p, timer_increase))
-
-            ''' TODO: WHY TF am I stuck???
-                NOTE: Give up for now. '''
+                # Ensure the values do not exceed the maximum or minimum
+                self.player.anxiety = min(self.max_value_a_p, self.player.anxiety)
+                self.player.paranoia = min(self.max_value_a_p, self.player.paranoia)
+                self.player.anxiety = max(0, self.player.anxiety)
+                self.player.paranoia = max(0, self.player.paranoia)
 
             # Update focus
             if self.player.focus > 0 and self.player.focus < 101:
@@ -1489,10 +1491,6 @@ class Game():
                 self.player.hearts = 0
             if self.player.hearts > 5:
                 self.player.hearts = 5
-            if self.player.anxiety < 0:
-                self.player.anxiety = 0
-            if self.player.paranoia < 0:
-                self.player.paranoia = 0
             if self.player.focus < 0:
                 self.player.focus = 0
             if self.player.focus > 100:
