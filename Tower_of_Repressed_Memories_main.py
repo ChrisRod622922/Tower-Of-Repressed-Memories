@@ -3,9 +3,10 @@
 ''' NOTE:
           - Game class needs more code moved to dedicated functions!!
 
-          Right now: fix item bug (decrement instead), finish enemy classes, manually move lava up for now, finish lv1 (new layout --
-                     try to incorporate all assets), parallax (8 images: change Level class code), modulalize code/cleanup,
-                     end memory revealed, game art/whatever else for turn in... exposition screens if time...
+          Right now: finish lv1 (new layout -- manually move lava up for now,
+                     try to incorporate all assets), sprites for items, parallax (8 images: change Level class code),
+                     modulalize code/cleanup, end memory revealed, game art/whatever else for turn in...
+                     finish Stalker enemy class, screen effects...
                      (also have Player/other sprites manually moved x pixels down to reach grass tiles ***)
                      Fix Player animations if possible (and add Death)...
                      If time allows, ADD STATUS EFFECT UPDATES (like when collide w/enemy, dir. is reversed, etc.)
@@ -13,25 +14,20 @@
 '''
 
 ''' TODO (move to .md file in separate module folder. "Backlog" i.e.):
-          For BUG's, can open Issues on Github...
           1. Add jump and follow ability for Stalkers, then teleport ability
                 --- IN PROGRESS ---
           2. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
           3. MAJOR BUG: Rising Lava
-          4. FIX ITEM BUG (if can't fix, might need to discard)
              (Try changing math for anxiety/paranoia & try to have them increase at a predetermined rate)
-          5. FIX LAVA tick BUG (moves before game actually starts -- probably has to do w/elapsed time via clock.ticks() )
           6. Add screen effects and artifacts
           7. Restart current level on death, instead of restarting game
           8. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
           9. Display actual hearts for Hearts (instead of numbers)
          10. CLEAN UP CODE / SEPARATE MODULES
              (Use CTRL+F to find leftover TODO's & print statements)
-         11. Continue with other levels (if time allows)
 '''
 
 ''' TODO: LEVELS (planning):
-          NOTE: map out in Photoshop or other editor where you can use a grid
           1. Escape from rising lava (DEMO GOAL)
           2. Shrinking level (spikes closing in on sides of screen)
           3. Blocks randomly fall OR there are ice blocks; instakill enemy is simply this
@@ -173,6 +169,7 @@ tile_images = { "Main_Block_L": load_image('assets/images/tiles/BlockL.png'),
                 "Main_Block_M": load_image('assets/images/tiles/BlockM.png'),
                 "Main_Block_R": load_image('assets/images/tiles/BlockR.png'),
                 "Main_Block_Normal": load_image('assets/images/tiles/Block1.png'),
+                "Block_Solid": load_image('assets/images/tiles/Block2.png'),
                 "Small_Block_L": load_image('assets/images/tiles/SmallL.png'),
                 "Small_Block_M": load_image('assets/images/tiles/BlockSmallM.png'),
                 "Small_Block_R": load_image('assets/images/tiles/SmallR.png'),
@@ -203,9 +200,9 @@ spikes_enemy_images = [ load_image('assets/images/tiles/Spikes.png') ]
 nonkillable_enemy_images = [ load_image('assets/images/enemy/Lava.png') ]
 
 item_images = { "Gem": load_image('assets/images/item/platformPack_item008.png'),
-                "Stress_Ball": load_image('assets/images/item/platformPack_item010.png'),
-                "Calming_Gem": load_image('assets/images/item/platformPack_item007.png'),
-                "Magic_Strawberry": load_image('assets/images/item/platformPack_item006.png') }
+                "Anxiety_Orb": load_image('assets/images/item/Anxiety_Orb.png'),
+                "Paranoia_Orb": load_image('assets/images/item/Paranoia_Orb.png'),
+                "Healing_Orb": load_image('assets/images/item/Healing_Orb.png') }
 
 # Levels
 levels = ["assets/levels/level_1.json"]
@@ -910,7 +907,7 @@ class Gem(pygame.sprite.Sprite):
         pass
 
 
-class StressBall(Gem):
+class AnxietyOrb(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
         super().__init__(x, y, image)
@@ -927,7 +924,7 @@ class StressBall(Gem):
         self.paranoia_value = 0
 
 
-class CalmingGem(Gem):
+class ParanoiaOrb(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
         super().__init__(x, y, image)
@@ -944,7 +941,7 @@ class CalmingGem(Gem):
         self.paranoia_value = -10
 
 
-class MagicStrawberry(Gem):
+class HealingOrb(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
         super().__init__(x, y, image)
@@ -1060,12 +1057,12 @@ class Level():
             
             if kind == "Gem":
                 s = Gem(x, y, item_images[kind])
-            elif kind == "Stress_Ball":
-                s = StressBall(x, y, item_images[kind])
-            elif kind == "Calming_Gem":
-                s = CalmingGem(x, y, item_images[kind])
-            elif kind == "Magic_Strawberry":
-                s = MagicStrawberry(x, y, item_images[kind])
+            elif kind == "Anxiety_Orb":
+                s = AnxietyOrb(x, y, item_images[kind])
+            elif kind == "Paranoia_Orb":
+                s = ParanoiaOrb(x, y, item_images[kind])
+            elif kind == "Healing_Orb":
+                s = HealingOrb(x, y, item_images[kind])
                 
             self.items.add(s)
 
@@ -1321,7 +1318,7 @@ class Game():
 
         level_str = "Level: " + str(self.current_level)
         
-        text1 = font_sm.render(level_str, 1, YELLOW, pygame.SRCALPHA)
+        text1 = font_sm.render(level_str, 1, WHITE, pygame.SRCALPHA)
         rect1 = text1.get_rect()
         rect1.left = 24
         rect1.top = 24
@@ -1329,7 +1326,7 @@ class Game():
     
         score_str = "Score: " + str(self.player.score)
         
-        text2 = font_sm.render(score_str, 1, YELLOW, pygame.SRCALPHA)
+        text2 = font_sm.render(score_str, 1, (255, 220, 81), pygame.SRCALPHA)
         rect2 = text2.get_rect()
         rect2.left = 24
         rect2.top = rect1.bottom + 10
@@ -1337,7 +1334,7 @@ class Game():
 
         timer_str = "Time: " + str(self.timer)
         
-        text3 = font_sm.render(timer_str, 1, YELLOW, pygame.SRCALPHA)
+        text3 = font_sm.render(timer_str, 1, WHITE, pygame.SRCALPHA)
         rect3 = text3.get_rect()
         rect3.right = SCREEN_WIDTH - 24
         rect3.top = 24
@@ -1345,7 +1342,7 @@ class Game():
 
         anxiety_str = "Anxiety: " + str(self.player.anxiety)
 
-        text4 = font_sm.render(anxiety_str, 1, YELLOW, pygame.SRCALPHA)
+        text4 = font_sm.render(anxiety_str, 1, (81, 196, 255), pygame.SRCALPHA)
         rect4 = text4.get_rect()
         rect4.left = (spacing * 3) - (rect4.width / 2)
         rect4.top = 24
@@ -1353,7 +1350,7 @@ class Game():
 
         paranoia_str = "Paranoia: " + str(self.player.paranoia)
 
-        text5 = font_sm.render(paranoia_str, 1, YELLOW, pygame.SRCALPHA)
+        text5 = font_sm.render(paranoia_str, 1, (0, 220, 0), pygame.SRCALPHA)
         rect5 = text5.get_rect()
         rect5.left = (spacing * 4) - (rect5.width / 2)
         rect5.top = 24
@@ -1361,7 +1358,7 @@ class Game():
 
         focus_str = "Focus: " + str(self.player.focus)
 
-        text6 = font_sm.render(focus_str, 1, YELLOW, pygame.SRCALPHA)
+        text6 = font_sm.render(focus_str, 1, (0, 220, 215), pygame.SRCALPHA)
         rect6 = text6.get_rect()
         rect6.left = (spacing * 5) - (rect6.width / 2)
         rect6.top = 24
@@ -1369,7 +1366,7 @@ class Game():
 
         hearts_str = "Hearts: " + str(self.player.hearts)
 
-        text7 = font_sm.render(hearts_str, 1, YELLOW, pygame.SRCALPHA)
+        text7 = font_sm.render(hearts_str, 1, (255, 44, 44), pygame.SRCALPHA)
         rect7 = text7.get_rect()
         rect7.left = (spacing * 2) - (rect7.width / 2)
         rect7.top = 24
@@ -1377,7 +1374,7 @@ class Game():
 
         high_score_str = "High Score: " + str(self.player.high_score)
 
-        text8 = font_sm.render(high_score_str, 1, YELLOW, pygame.SRCALPHA)
+        text8 = font_sm.render(high_score_str, 1, (255, 220, 81), pygame.SRCALPHA)
         rect8 = text8.get_rect()
         rect8.right = SCREEN_WIDTH - 24
         rect8.top = rect3.bottom + 10
@@ -1473,7 +1470,7 @@ class Game():
                 self.player.anxiety += int(self.rate)
                 self.player.paranoia += int(self.rate)
 
-                # Ensure the values do not exceed the maximum or minimum
+                # Ensure the values do not exceed the max or min values
                 self.player.anxiety = min(self.max_value_a_p, self.player.anxiety)
                 self.player.paranoia = min(self.max_value_a_p, self.player.paranoia)
                 self.player.anxiety = max(0, self.player.anxiety)
