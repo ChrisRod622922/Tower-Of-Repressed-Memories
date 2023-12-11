@@ -6,7 +6,8 @@
           Right now: change sprites, fix item bug (decrement instead), finish enemy classes (& figure out how to get lava
                      to draw over foreground! Might need to ungroup from active??), finish lv1 (new layout --
                      try to incorporate all assets), parallax (8 images: change Level class code), modulalize code/cleanup,
-                     game art/whatever else for turn in...
+                     game art/whatever else for turn in... (also have Player/other sprites manually moved x pixels down to
+                     reach grass tiles ***)
                      If time allows, ADD STATUS EFFECT UPDATES (like when collide w/enemy, dir. is reversed, etc.)
           NOTE: if I run out of time to fix Lava class, change all the update function param. back to normal
 '''
@@ -168,8 +169,8 @@ tile_images = { "Main_Block_L": load_image('assets/images/tiles/BlockL.png'),
 slime_enemy_images = [ load_image('assets/images/enemy/platformPack_tile024a.png'),
                        load_image('assets/images/enemy/platformPack_tile024b.png') ]
 
-terror_enemy_images = [ load_image('assets/images/enemy/platformPack_tile011a.png'),
-                          load_image('assets/images/enemy/platformPack_tile011b.png') ]
+terror_enemy_images = [ load_image('assets/images/enemy/Terror_idle.png'),
+                          load_image('assets/images/enemy/Terror_move.png') ]
 
 stalker_enemy_images = [ load_image('assets/images/enemy/platformPack_tile044.png'),
                           load_image('assets/images/enemy/platformPack_tile044.png') ]
@@ -485,6 +486,7 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
 
         self.images = images
         self.image = images[0]
+        self.rev_image = flip_image(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -492,9 +494,7 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
         self.vx = -4
         self.vy = 0
 
-        self.steps = 0
-        self.step_rate = 6
-        self.walk_index = 0
+        self.should_reverse = False
 
         self.score_value = -10
         self.heart_value = -2
@@ -555,28 +555,22 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
         # Vertical
         if self.rect.top > level.height:
             self.kill()
-        
-    # Animation speed
-    def step(self):
-        self.steps = (self.steps + 1) % self.step_rate
-
-        if self.steps == 0:
-            self.walk_index = (self.walk_index + 1) % len(self.images)
 
     def set_image(self):
-        self.image = self.images[self.walk_index]
+        if self.vx > 0:
+            self.image = self.images[1]
+        elif self.vx < 0:
+            self.image = self.rev_image
         
-    def update(self, total_time, initial_time, level):
-        self.should_reverse = False
-        
+    def update(self, total_time, initial_time, level):        
         self.apply_gravity(level)
         self.move_and_check_tiles(level)
         self.check_world_edges(level)
         
         if self.should_reverse:
             self.reverse()
+        self.should_reverse = False
             
-        self.step()
         self.set_image()
 
             
@@ -649,10 +643,6 @@ class StalkerEnemy(TerrorEnemy):
         self.vy = 0
         self.jump_power = 20
 
-        self.steps = 0
-        self.step_rate = 6
-        self.walk_index = 0
-
         self.score_value = -10
         self.heart_value = -2
         self.anxiety_value = 5
@@ -688,7 +678,6 @@ class StalkerEnemy(TerrorEnemy):
         if self.should_reverse:
             self.reverse()
             
-        self.step()
         self.set_image()
 
 
@@ -706,10 +695,6 @@ class SpikeEnemy(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-        self.steps = 0
-        self.step_rate = 6
-        self.walk_index = 0
-
         self.score_value = -5
         self.heart_value = -1
         self.anxiety_value = 2
@@ -725,7 +710,7 @@ class SpikeEnemy(pygame.sprite.Sprite):
         player.adrenaline += self.adrenaline_value
 
     def set_image(self):
-        self.image = self.images[self.walk_index]
+        self.image = self.images[0]
         
     def update(self, total_time, initial_time, level):            
         self.set_image()
@@ -752,10 +737,6 @@ class RisingLava(pygame.sprite.Sprite):
 
         # Default speed
         self.vy = 1
-
-        self.steps = 0
-        self.step_rate = 1
-        self.walk_index = 0
 
         self.score_value = 0
         self.heart_value = -999
@@ -838,10 +819,6 @@ class LavaHitbox(RisingLava):
         super().__init__(x, y, images=None)
 
         self.vy = 1
-
-        self.steps = 0
-        self.step_rate = 1
-        self.walk_index = 0
 
         self.score_value = 0
         self.heart_value = 0
