@@ -3,8 +3,7 @@
 ''' NOTE:
           - Game class needs more code moved to dedicated functions!!
 
-          Right now: change sprites, fix item bug (decrement instead), finish enemy classes (& figure out how to get lava
-                     to draw over foreground! Might need to ungroup from active??), finish lv1 (new layout --
+          Right now: change sprites, fix item bug (decrement instead), finish enemy classes, finish lv1 (new layout --
                      try to incorporate all assets), parallax (8 images: change Level class code), modulalize code/cleanup,
                      game art/whatever else for turn in... (also have Player/other sprites manually moved x pixels down to
                      reach grass tiles ***)
@@ -166,8 +165,10 @@ tile_images = { "Main_Block_L": load_image('assets/images/tiles/BlockL.png'),
                 "Lamp": load_image('assets/images/tiles/lamp.png'),
                 "Door": load_image('assets/images/tiles/platformPack_tile048.png') }
         
-slime_enemy_images = [ load_image('assets/images/enemy/platformPack_tile024a.png'),
-                       load_image('assets/images/enemy/platformPack_tile024b.png') ]
+slime_enemy_images = [ load_image('assets/images/enemy/Mind_Slime1.png'),
+                       load_image('assets/images/enemy/Mind_Slime2.png'),
+                       load_image('assets/images/enemy/Mind_Slime3.png'),
+                       load_image('assets/images/enemy/Mind_Slime4.png') ]
 
 terror_enemy_images = [ load_image('assets/images/enemy/Terror_idle.png'),
                           load_image('assets/images/enemy/Terror_move.png') ]
@@ -494,6 +495,10 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
         self.vx = -4
         self.vy = 0
 
+        self.steps = 0
+        self.step_rate = 6
+        self.walk_index = 0
+
         self.should_reverse = False
 
         self.score_value = -10
@@ -556,11 +561,18 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
         if self.rect.top > level.height:
             self.kill()
 
+    # Animation
+    def step(self):
+        self.steps = (self.steps + 1) % self.step_rate
+
+        if self.steps == 0:
+            self.walk_index = (self.walk_index + 1) % len(self.images)
+
     def set_image(self):
         if self.vx > 0:
-            self.image = self.images[1]
+            self.image = self.images[self.walk_index]
         elif self.vx < 0:
-            self.image = self.rev_image
+            self.image = flip_image(self.images[self.walk_index])
         
     def update(self, total_time, initial_time, level):        
         self.apply_gravity(level)
@@ -571,6 +583,7 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
             self.reverse()
         self.should_reverse = False
             
+        self.step()
         self.set_image()
 
             
@@ -624,6 +637,13 @@ class TerrorEnemy(MindSlimeEnemy):
 
         if not on_platform:
             self.should_reverse = True
+
+    ''' Override function '''
+    def set_image(self):
+        if self.vx > 0:
+            self.image = self.images[1]
+        elif self.vx < 0:
+            self.image = self.rev_image
 
 
 class StalkerEnemy(TerrorEnemy):
@@ -1485,8 +1505,20 @@ class Game():
         self.level.world.blit(self.level.background1, [bg1_offset_x, bg1_offset_y])
         self.level.world.blit(self.level.background2, [bg2_offset_x, bg2_offset_y])
         self.level.world.blit(self.level.inactive, [0, 0])
-        self.level.world.blit(self.level.active, [0, 0])
+
+        # Render items
+        for item in self.level.items:
+            self.level.world.blit(item.image, item.rect.topleft)
+
+        # Render player
+        self.level.world.blit(self.player.image, self.player.rect.topleft)
+
+        # Render foreground
         self.level.world.blit(self.level.foreground, [0, 0])
+
+        # Render enemies
+        for enemy in self.level.enemies:
+            self.level.world.blit(enemy.image, enemy.rect.topleft)
 
         screen.blit(self.level.world, [offset_x, offset_y])
 
