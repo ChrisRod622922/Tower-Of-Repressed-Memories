@@ -3,15 +3,17 @@
 ''' NOTE:
           - Game class needs more code moved to dedicated functions!!
 
-          Right now: fix item bug (decrement instead), finish enemy classes, finish lv1 (new layout --
+          Right now: fix item bug (decrement instead), finish enemy classes, manually move lava up for now, finish lv1 (new layout --
                      try to incorporate all assets), parallax (8 images: change Level class code), modulalize code/cleanup,
-                     exposition screens if time, game art/whatever else for turn in... (also have Player/other sprites
-                     manually moved x pixels down to reach grass tiles ***)
+                     end memory revealed, game art/whatever else for turn in... exposition screens if time...
+                     (also have Player/other sprites manually moved x pixels down to reach grass tiles ***)
+                     Fix Player animations if possible (and add Death)...
                      If time allows, ADD STATUS EFFECT UPDATES (like when collide w/enemy, dir. is reversed, etc.)
           NOTE: if I run out of time to fix Lava class, change all the update function param. back to normal
 '''
 
-''' TODO (move to .md file in separate module folder. "To-dos" or "planning" i.e.):
+''' TODO (move to .md file in separate module folder. "Backlog" i.e.):
+          For BUG's, can open Issues on Github...
           1. Add jump and follow ability for Stalkers, then teleport ability
                 --- IN PROGRESS ---
           2. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
@@ -130,23 +132,42 @@ complete_snd = load_sound('assets/sounds/complete.ogg')
 win_snd = load_sound('assets/sounds/win.ogg')
 lose_snd = load_sound('assets/sounds/lose.ogg')
 
-# Images
-idle = load_image('assets/images/character/platformChar_idle.png')
-walk = [load_image('assets/images/character/platformChar_walk1.png'),
-        load_image('assets/images/character/platformChar_walk2.png')]
-jump = load_image('assets/images/character/platformChar_jump.png')
-hurt = load_image('assets/images/character/platformChar_hurt.png')
+# Player images
+idle = load_image('assets/images/character/Player_idle.png')
+walk = [load_image('assets/images/character/Player_walk1.png'),
+        load_image('assets/images/character/Player_walk2.png'),
+        load_image('assets/images/character/Player_walk3.png'),
+        load_image('assets/images/character/Player_walk4.png')]
+jump = [load_image('assets/images/character/Player_jump1.png'),
+        load_image('assets/images/character/Player_jump2.png'),
+        load_image('assets/images/character/Player_jump3.png'),
+        load_image('assets/images/character/Player_jump4.png'),
+        load_image('assets/images/character/Player_jump5.png'),
+        load_image('assets/images/character/Player_jump6.png'),
+        load_image('assets/images/character/Player_jump7.png'),
+        load_image('assets/images/character/Player_jump8.png')]
+hurt = [load_image('assets/images/character/Player_hit1.png'),
+        load_image('assets/images/character/Player_hit2.png'),
+        load_image('assets/images/character/Player_hit3.png'),
+        load_image('assets/images/character/Player_hit4.png'),
+        load_image('assets/images/character/Player_hit5.png'),
+        load_image('assets/images/character/Player_hit6.png')]
+death = [load_image('assets/images/character/Player_death1.png'),
+        load_image('assets/images/character/Player_death2.png'),
+        load_image('assets/images/character/Player_death3.png'),
+        load_image('assets/images/character/Player_death4.png')]
 
 
-# TODO: replace images with custom or more fitting images
 player_images = { "idle_rt": idle,
                 "walk_rt": walk,
                 "jump_rt": jump,
                 "hurt_rt": hurt,
+                "dead_rt": death,
                 "idle_lt": flip_image(idle),
                 "walk_lt" : [flip_image(img) for img in walk],
-                "jump_lt": flip_image(jump),
-                "hurt_lt": flip_image(hurt) }
+                "jump_lt": [flip_image(img) for img in jump],
+                "hurt_lt": [flip_image(img) for img in hurt],
+                "dead_lt": [flip_image(img) for img in death] }
              
 tile_images = { "Main_Block_L": load_image('assets/images/tiles/BlockL.png'),
                 "Main_Block_M": load_image('assets/images/tiles/BlockM.png'),
@@ -456,14 +477,14 @@ class Player(pygame.sprite.Sprite):
             hurt = self.images['hurt_lt']
 
         if self.hurt_timer > 0:
-            self.image = hurt
+            self.image = hurt[self.walk_index % len(hurt)]
         elif self.vy != 0:
-            self.image = jump
+            self.image = jump[self.walk_index % len(jump)]
         elif self.vx == 0:
             self.image = idle
         else:
-            self.image = walk[self.walk_index]
-            
+            self.image = walk[self.walk_index % len(walk)]
+                
     def update(self, total_time, initial_time, level):
         self.apply_gravity(level)
         self.move_and_check_tiles(level)

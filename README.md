@@ -4,3 +4,7 @@ Work in Progress game for Clemson CPSC 4160
 (About game, enemies, points, goal, etc...)
 
 (Screenshots)
+
+(Backlog)
+
+(Credits)

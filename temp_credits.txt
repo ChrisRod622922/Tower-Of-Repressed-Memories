@@ -3,3 +3,7 @@ Background images by Old_Ape (downloaded from opengameart.org).
 Chaos sprites (Terror assets) by EmeraldActivities.com, http://opengameart.org/users/emerald. 
 Slime sprites by Fleurman (downloaded from opengameart.org). 
 Stalker sprites by Gilgaphoenixignis (downloaded from opengameart.org). 
+Protagonist sprites by Penzilla from itch.io (https://penzilla.itch.io/hooded-protagonist). 
+
+Sound effects from opengameart.org. 
+Original music created in GarageBand for MacOS. 
