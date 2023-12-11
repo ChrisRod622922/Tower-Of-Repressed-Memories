@@ -3,10 +3,10 @@
 ''' NOTE:
           - Game class needs more code moved to dedicated functions!!
 
-          Right now: change sprites, fix item bug (decrement instead), finish enemy classes, finish lv1 (new layout --
+          Right now: fix item bug (decrement instead), finish enemy classes, finish lv1 (new layout --
                      try to incorporate all assets), parallax (8 images: change Level class code), modulalize code/cleanup,
-                     game art/whatever else for turn in... (also have Player/other sprites manually moved x pixels down to
-                     reach grass tiles ***)
+                     exposition screens if time, game art/whatever else for turn in... (also have Player/other sprites
+                     manually moved x pixels down to reach grass tiles ***)
                      If time allows, ADD STATUS EFFECT UPDATES (like when collide w/enemy, dir. is reversed, etc.)
           NOTE: if I run out of time to fix Lava class, change all the update function param. back to normal
 '''
@@ -151,6 +151,7 @@ player_images = { "idle_rt": idle,
 tile_images = { "Main_Block_L": load_image('assets/images/tiles/BlockL.png'),
                 "Main_Block_M": load_image('assets/images/tiles/BlockM.png'),
                 "Main_Block_R": load_image('assets/images/tiles/BlockR.png'),
+                "Main_Block_Normal": load_image('assets/images/tiles/Block1.png'),
                 "Small_Block_L": load_image('assets/images/tiles/SmallL.png'),
                 "Small_Block_M": load_image('assets/images/tiles/BlockSmallM.png'),
                 "Small_Block_R": load_image('assets/images/tiles/SmallR.png'),
@@ -173,8 +174,8 @@ slime_enemy_images = [ load_image('assets/images/enemy/Mind_Slime1.png'),
 terror_enemy_images = [ load_image('assets/images/enemy/Terror_idle.png'),
                           load_image('assets/images/enemy/Terror_move.png') ]
 
-stalker_enemy_images = [ load_image('assets/images/enemy/platformPack_tile044.png'),
-                          load_image('assets/images/enemy/platformPack_tile044.png') ]
+stalker_enemy_images = [ load_image('assets/images/enemy/Stalker.png'),
+                          load_image('assets/images/enemy/Stalker.png') ]
 
 spikes_enemy_images = [ load_image('assets/images/tiles/Spikes.png') ]
 
@@ -499,7 +500,7 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
         self.step_rate = 6
         self.walk_index = 0
 
-        self.should_reverse = False
+        self.should_reverse = True
 
         self.score_value = -10
         self.heart_value = -2
@@ -602,6 +603,8 @@ class TerrorEnemy(MindSlimeEnemy):
         self.paranoia_value = 0
         self.adrenaline_value = 0
 
+        self.should_reverse = False
+
     ''' Override this function '''
     def move_and_check_tiles(self, level):
         #reverse = False
@@ -668,6 +671,8 @@ class StalkerEnemy(TerrorEnemy):
         self.anxiety_value = 5
         self.paranoia_value = 5
         self.adrenaline_value = 0
+
+        self.should_reverse = False
 
     # Prevent clipping
     def can_jump(self, tiles):
