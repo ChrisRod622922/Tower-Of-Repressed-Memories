@@ -1,44 +1,9 @@
 # pylint: disable=import-error
 
-''' NOTE:
-          - Game class needs more code moved to dedicated functions!!
-          - TODO: If more levels added, logic for NK enemies will need to change. Do LAST if time
-'''
-
-''' TODO:
-          1. Add jump and follow ability for Stalkers, then teleport ability
-                --- IN PROGRESS ---
-          2. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
-          3. MAJOR BUG: Rising Lava
-          4. FIX ITEM BUG (if can't fix, might need to discard)
-             (Try changing math for anxiety/paranoia & try to have them increase at a predetermined rate)
-          5. FIX LAVA tick BUG (moves before game actually starts -- probably has to do w/elapsed time via clock.ticks() )
-          6. Add background images and v. parallax
-             If possible, a fuzzy dreamlike animated BG would be awesome
-          7. Add screen effects and artifacts
-          8. REPLACE SPRITES & SOUNDS
-          9. Create Level 1 layout / loop music logic
-         10. Restart current level on death, instead of restarting game
-         11. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
-         12. Display actual hearts for Hearts (instead of numbers)
-         13. CLEAN UP CODE / SEPARATE MODULES
-             (Use CTRL+F to find leftover TODO's & print statements)
-         14. Continue with other levels (if time allows)
-'''
-
 ''' TODO: LEVELS (planning):
-          NOTE: map out in Photoshop or other editor where you can use a grid
           1. Escape from rising lava (DEMO GOAL)
           2. Shrinking level (spikes closing in on sides of screen)
-          3. Blocks randomly fall OR there are ice blocks; instakill enemy is simply this
-
-    NOTE:
-        -- Anxiety and paranoia max value = 100
-        -- Player speed now decreased by 25% when focus is below 75 and 50
-        -- To implement Title Screen & exposition, create Stage TITLE, waiting for input SPACE (if no menu).
-           Increment a pages variable to page through exposition (follows Title, SPACE to proceed) until no more
-           pages (can just hard-code #). Then start level init and setup.
-             
+          3. Blocks randomly fall OR there are ice blocks; instakill enemy is simply this  
 '''
 
 # Imports
@@ -128,49 +93,81 @@ complete_snd = load_sound('assets/sounds/complete.ogg')
 win_snd = load_sound('assets/sounds/win.ogg')
 lose_snd = load_sound('assets/sounds/lose.ogg')
 
-# Images
-idle = load_image('assets/images/character/platformChar_idle.png')
-walk = [load_image('assets/images/character/platformChar_walk1.png'),
-        load_image('assets/images/character/platformChar_walk2.png')]
-jump = load_image('assets/images/character/platformChar_jump.png')
-hurt = load_image('assets/images/character/platformChar_hurt.png')
+# Player images
+idle = load_image('assets/images/character/Player_idle.png')
+walk = [load_image('assets/images/character/Player_walk1.png'),
+        load_image('assets/images/character/Player_walk2.png'),
+        load_image('assets/images/character/Player_walk3.png'),
+        load_image('assets/images/character/Player_walk4.png')]
+jump = [load_image('assets/images/character/Player_jump1.png'),
+        load_image('assets/images/character/Player_jump2.png'),
+        load_image('assets/images/character/Player_jump3.png'),
+        load_image('assets/images/character/Player_jump4.png'),
+        load_image('assets/images/character/Player_jump5.png'),
+        load_image('assets/images/character/Player_jump6.png'),
+        load_image('assets/images/character/Player_jump7.png'),
+        load_image('assets/images/character/Player_jump8.png')]
+hurt = [load_image('assets/images/character/Player_hit1.png'),
+        load_image('assets/images/character/Player_hit2.png'),
+        load_image('assets/images/character/Player_hit3.png'),
+        load_image('assets/images/character/Player_hit4.png'),
+        load_image('assets/images/character/Player_hit5.png'),
+        load_image('assets/images/character/Player_hit6.png')]
+death = [load_image('assets/images/character/Player_death1.png'),
+        load_image('assets/images/character/Player_death2.png'),
+        load_image('assets/images/character/Player_death3.png'),
+        load_image('assets/images/character/Player_death4.png')]
 
 
-# TODO: replace images with custom or more fitting images
 player_images = { "idle_rt": idle,
                 "walk_rt": walk,
                 "jump_rt": jump,
                 "hurt_rt": hurt,
+                "dead_rt": death,
                 "idle_lt": flip_image(idle),
                 "walk_lt" : [flip_image(img) for img in walk],
-                "jump_lt": flip_image(jump),
-                "hurt_lt": flip_image(hurt) }
+                "jump_lt": [flip_image(img) for img in jump],
+                "hurt_lt": [flip_image(img) for img in hurt],
+                "dead_lt": [flip_image(img) for img in death] }
              
-tile_images = { "Grass": load_image('assets/images/tiles/platformPack_tile001.png'),
-                "Platform": load_image('assets/images/tiles/platformPack_tile041.png'),
-                "Red_Platform": load_image('assets/images/tiles/platformPack_tile020.png'),
-                "Sand": load_image('assets/images/tiles/platformPack_tile002.png'),
-                "Dirt": load_image('assets/images/tiles/platformPack_tile004.png'),
+tile_images = { "Main_Block_L": load_image('assets/images/tiles/BlockL.png'),
+                "Main_Block_M": load_image('assets/images/tiles/BlockM.png'),
+                "Main_Block_R": load_image('assets/images/tiles/BlockR.png'),
+                "Main_Block_Normal": load_image('assets/images/tiles/Block1.png'),
+                "Block_Solid": load_image('assets/images/tiles/Block2.png'),
+                "Small_Block_L": load_image('assets/images/tiles/SmallL.png'),
+                "Small_Block_M": load_image('assets/images/tiles/BlockSmallM.png'),
+                "Small_Block_R": load_image('assets/images/tiles/SmallR.png'),
+                "Small_Block_Single": load_image('assets/images/tiles/BlockSmall.png'),
+                "Crate": load_image('assets/images/tiles/Crate.png'),
+                "Portal": load_image('assets/images/tiles/platformPack_tile057.png'),
+                "Sign": load_image('assets/images/tiles/SignBoard.png'),
+                "Water_Surface": load_image('assets/images/tiles/Water3.png'),
+                "Water": load_image('assets/images/tiles/Water4.png'),
                 "Lava_Surface": load_image('assets/images/tiles/platformPack_tile006.png'),
                 "Lava": load_image('assets/images/tiles/platformPack_tile018.png'),
                 "Lamp": load_image('assets/images/tiles/lamp.png'),
                 "Door": load_image('assets/images/tiles/platformPack_tile048.png') }
         
-slime_enemy_images = [ load_image('assets/images/enemy/platformPack_tile024a.png'),
-                       load_image('assets/images/enemy/platformPack_tile024b.png') ]
+slime_enemy_images = [ load_image('assets/images/enemy/Mind_Slime1.png'),
+                       load_image('assets/images/enemy/Mind_Slime2.png'),
+                       load_image('assets/images/enemy/Mind_Slime3.png'),
+                       load_image('assets/images/enemy/Mind_Slime4.png') ]
 
-terror_enemy_images = [ load_image('assets/images/enemy/platformPack_tile011a.png'),
-                          load_image('assets/images/enemy/platformPack_tile011b.png') ]
+terror_enemy_images = [ load_image('assets/images/enemy/Terror_idle.png'),
+                          load_image('assets/images/enemy/Terror_move.png') ]
 
-stalker_enemy_images = [ load_image('assets/images/enemy/platformPack_tile044.png'),
-                          load_image('assets/images/enemy/platformPack_tile044.png') ]
+stalker_enemy_images = [ load_image('assets/images/enemy/Stalker.png'),
+                          load_image('assets/images/enemy/Stalker.png') ]
+
+spikes_enemy_images = [ load_image('assets/images/tiles/Spikes.png') ]
 
 nonkillable_enemy_images = [ load_image('assets/images/enemy/Lava.png') ]
 
 item_images = { "Gem": load_image('assets/images/item/platformPack_item008.png'),
-                "Stress_Ball": load_image('assets/images/item/platformPack_item010.png'),
-                "Calming_Gem": load_image('assets/images/item/platformPack_item007.png'),
-                "Magic_Strawberry": load_image('assets/images/item/platformPack_item006.png') }
+                "Anxiety_Orb": load_image('assets/images/item/Anxiety_Orb.png'),
+                "Paranoia_Orb": load_image('assets/images/item/Paranoia_Orb.png'),
+                "Healing_Orb": load_image('assets/images/item/Healing_Orb.png') }
 
 # Levels
 levels = ["assets/levels/level_1.json"]
@@ -441,14 +438,14 @@ class Player(pygame.sprite.Sprite):
             hurt = self.images['hurt_lt']
 
         if self.hurt_timer > 0:
-            self.image = hurt
+            self.image = hurt[self.walk_index % len(hurt)]
         elif self.vy != 0:
-            self.image = jump
+            self.image = jump[self.walk_index % len(jump)]
         elif self.vx == 0:
             self.image = idle
         else:
-            self.image = walk[self.walk_index]
-            
+            self.image = walk[self.walk_index % len(walk)]
+                
     def update(self, total_time, initial_time, level):
         self.apply_gravity(level)
         self.move_and_check_tiles(level)
@@ -473,6 +470,7 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
 
         self.images = images
         self.image = images[0]
+        self.rev_image = flip_image(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -483,6 +481,8 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
         self.steps = 0
         self.step_rate = 6
         self.walk_index = 0
+
+        self.should_reverse = True
 
         self.score_value = -10
         self.heart_value = -2
@@ -543,8 +543,8 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
         # Vertical
         if self.rect.top > level.height:
             self.kill()
-        
-    # Animation speed
+
+    # Animation
     def step(self):
         self.steps = (self.steps + 1) % self.step_rate
 
@@ -552,17 +552,19 @@ class MindSlimeEnemy(pygame.sprite.Sprite):
             self.walk_index = (self.walk_index + 1) % len(self.images)
 
     def set_image(self):
-        self.image = self.images[self.walk_index]
+        if self.vx > 0:
+            self.image = self.images[self.walk_index]
+        elif self.vx < 0:
+            self.image = flip_image(self.images[self.walk_index])
         
-    def update(self, total_time, initial_time, level):
-        self.should_reverse = False
-        
+    def update(self, total_time, initial_time, level):        
         self.apply_gravity(level)
         self.move_and_check_tiles(level)
         self.check_world_edges(level)
         
         if self.should_reverse:
             self.reverse()
+        self.should_reverse = False
             
         self.step()
         self.set_image()
@@ -582,6 +584,8 @@ class TerrorEnemy(MindSlimeEnemy):
         self.anxiety_value = 5
         self.paranoia_value = 0
         self.adrenaline_value = 0
+
+        self.should_reverse = False
 
     ''' Override this function '''
     def move_and_check_tiles(self, level):
@@ -619,6 +623,13 @@ class TerrorEnemy(MindSlimeEnemy):
         if not on_platform:
             self.should_reverse = True
 
+    ''' Override function '''
+    def set_image(self):
+        if self.vx > 0:
+            self.image = self.images[1]
+        elif self.vx < 0:
+            self.image = self.rev_image
+
 
 class StalkerEnemy(TerrorEnemy):
     '''
@@ -637,15 +648,13 @@ class StalkerEnemy(TerrorEnemy):
         self.vy = 0
         self.jump_power = 20
 
-        self.steps = 0
-        self.step_rate = 6
-        self.walk_index = 0
-
         self.score_value = -10
         self.heart_value = -2
         self.anxiety_value = 5
         self.paranoia_value = 5
         self.adrenaline_value = 0
+
+        self.should_reverse = False
 
     # Prevent clipping
     def can_jump(self, tiles):
@@ -676,7 +685,41 @@ class StalkerEnemy(TerrorEnemy):
         if self.should_reverse:
             self.reverse()
             
-        self.step()
+        self.set_image()
+
+
+class SpikeEnemy(pygame.sprite.Sprite):
+    '''
+    This enemy type does not move & merely serves as an obstacle.
+    '''
+    
+    def __init__(self, x, y, images):
+        super().__init__()
+
+        self.images = images
+        self.image = images[0]
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+        self.score_value = -5
+        self.heart_value = -1
+        self.anxiety_value = 2
+        self.paranoia_value = 0
+        self.adrenaline_value = 0
+
+    # Apply negative effects to Player upon collision (such as -Hearts)
+    def apply(self, player):
+        player.score += self.score_value
+        player.hearts += self.heart_value
+        player.anxiety += self.anxiety_value
+        player.paranoia += self.paranoia_value
+        player.adrenaline += self.adrenaline_value
+
+    def set_image(self):
+        self.image = self.images[0]
+        
+    def update(self, total_time, initial_time, level):            
         self.set_image()
 
 
@@ -702,10 +745,6 @@ class RisingLava(pygame.sprite.Sprite):
         # Default speed
         self.vy = 1
 
-        self.steps = 0
-        self.step_rate = 1
-        self.walk_index = 0
-
         self.score_value = 0
         self.heart_value = -999
         self.anxiety_value = 0
@@ -722,41 +761,6 @@ class RisingLava(pygame.sprite.Sprite):
 
     
     def move(self, timer, initial_time, level):
-        # 234
-        '''
-        # Calculate elapsed time since object created
-        elapsed_time = pygame.time.get_ticks() / 1000 - initial_time
-
-        # Ensure elapsed time is within the timer duration
-        elapsed_time = min(elapsed_time, total_time)
-
-        # Calculate normalized position (0 at the bottom, 1 at the top)
-        normalized_position = elapsed_time / total_time
-
-        # Calculate the new y position as a proportion of the level height
-        level_height_pixels = level.get_height() * level.get_tile_size()
-        proportion = 0.8  # How much of level height object should cover
-        new_y = int(proportion * normalized_position * level_height_pixels)
-        
-        # Debug information
-        print("Height pixels:", level_height_pixels)
-        print("Proportion:", proportion)
-        print("Current rect.y:", self.rect.y)
-        print("Calculated new rect.y:", new_y)
-        print("Calculated new rect.y with max:", max(new_y, SCREEN_HEIGHT - self.rect.height))
-        print("---")
-
-        # Calculate the speed factor (adjust as needed)
-        speed_factor = 0.2  # Adjust this value to control the speed
-
-        # Set new y position, ensuring it doesn't go below the bottom of the screen
-        self.rect.y = max(new_y, SCREEN_HEIGHT - self.rect.height)
-
-        # Apply speed factor
-        self.rect.y = int(self.rect.y * speed_factor)
-        '''
-
-        ''' In main: '''
         # Calculate remaining time
         remaining_time = max(0, initial_time - pygame.time.get_ticks() / 1000)
 
@@ -766,8 +770,6 @@ class RisingLava(pygame.sprite.Sprite):
 
         # Update the position
         self.rect.y -= self.vy * speed * remaining_time
-        
-        
 
     def set_image(self):
         self.image = self.images[0]
@@ -787,10 +789,6 @@ class LavaHitbox(RisingLava):
         super().__init__(x, y, images=None)
 
         self.vy = 1
-
-        self.steps = 0
-        self.step_rate = 1
-        self.walk_index = 0
 
         self.score_value = 0
         self.heart_value = 0
@@ -833,7 +831,7 @@ class Gem(pygame.sprite.Sprite):
         pass
 
 
-class StressBall(Gem):
+class AnxietyOrb(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
         super().__init__(x, y, image)
@@ -850,7 +848,7 @@ class StressBall(Gem):
         self.paranoia_value = 0
 
 
-class CalmingGem(Gem):
+class ParanoiaOrb(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
         super().__init__(x, y, image)
@@ -867,7 +865,7 @@ class CalmingGem(Gem):
         self.paranoia_value = -10
 
 
-class MagicStrawberry(Gem):
+class HealingOrb(Gem):
     ''' Only values need to be overridden '''
     def __init__(self, x, y, image):
         super().__init__(x, y, image)
@@ -983,12 +981,12 @@ class Level():
             
             if kind == "Gem":
                 s = Gem(x, y, item_images[kind])
-            elif kind == "Stress_Ball":
-                s = StressBall(x, y, item_images[kind])
-            elif kind == "Calming_Gem":
-                s = CalmingGem(x, y, item_images[kind])
-            elif kind == "Magic_Strawberry":
-                s = MagicStrawberry(x, y, item_images[kind])
+            elif kind == "Anxiety_Orb":
+                s = AnxietyOrb(x, y, item_images[kind])
+            elif kind == "Paranoia_Orb":
+                s = ParanoiaOrb(x, y, item_images[kind])
+            elif kind == "Healing_Orb":
+                s = HealingOrb(x, y, item_images[kind])
                 
             self.items.add(s)
 
@@ -1006,6 +1004,8 @@ class Level():
                 s = TerrorEnemy(x, y, terror_enemy_images)
             elif kind == "Stalker":
                 s = StalkerEnemy(x, y, stalker_enemy_images)
+            elif kind == "Spikes":
+                s = SpikeEnemy(x, y, spikes_enemy_images)
             elif kind == "Rising_Lava":
                 s = RisingLava(x, y, nonkillable_enemy_images)
                 
@@ -1109,6 +1109,9 @@ class Game():
         self.max_value_a_p = 100
     
     def setup(self):
+        # Reset clock
+        self.clock = pygame.time.Clock()
+        
         # Create player
         self.player = Player(player_images)
         self.mc = pygame.sprite.GroupSingle()
@@ -1151,7 +1154,6 @@ class Game():
         self.active_sprites.add(self.player, self.level.items, self.level.enemies)
 
         # Define unkillable object hitbox for level
-        #TODO: will need conditions to load correct unkillable obj hitbox for each level
         self.hitbox = self.level.hitboxes
 
     def start_level(self):
@@ -1242,7 +1244,7 @@ class Game():
 
         level_str = "Level: " + str(self.current_level)
         
-        text1 = font_sm.render(level_str, 1, YELLOW, pygame.SRCALPHA)
+        text1 = font_sm.render(level_str, 1, WHITE, pygame.SRCALPHA)
         rect1 = text1.get_rect()
         rect1.left = 24
         rect1.top = 24
@@ -1250,7 +1252,7 @@ class Game():
     
         score_str = "Score: " + str(self.player.score)
         
-        text2 = font_sm.render(score_str, 1, YELLOW, pygame.SRCALPHA)
+        text2 = font_sm.render(score_str, 1, (255, 220, 81), pygame.SRCALPHA)
         rect2 = text2.get_rect()
         rect2.left = 24
         rect2.top = rect1.bottom + 10
@@ -1258,7 +1260,7 @@ class Game():
 
         timer_str = "Time: " + str(self.timer)
         
-        text3 = font_sm.render(timer_str, 1, YELLOW, pygame.SRCALPHA)
+        text3 = font_sm.render(timer_str, 1, WHITE, pygame.SRCALPHA)
         rect3 = text3.get_rect()
         rect3.right = SCREEN_WIDTH - 24
         rect3.top = 24
@@ -1266,7 +1268,7 @@ class Game():
 
         anxiety_str = "Anxiety: " + str(self.player.anxiety)
 
-        text4 = font_sm.render(anxiety_str, 1, YELLOW, pygame.SRCALPHA)
+        text4 = font_sm.render(anxiety_str, 1, (81, 196, 255), pygame.SRCALPHA)
         rect4 = text4.get_rect()
         rect4.left = (spacing * 3) - (rect4.width / 2)
         rect4.top = 24
@@ -1274,7 +1276,7 @@ class Game():
 
         paranoia_str = "Paranoia: " + str(self.player.paranoia)
 
-        text5 = font_sm.render(paranoia_str, 1, YELLOW, pygame.SRCALPHA)
+        text5 = font_sm.render(paranoia_str, 1, (0, 220, 0), pygame.SRCALPHA)
         rect5 = text5.get_rect()
         rect5.left = (spacing * 4) - (rect5.width / 2)
         rect5.top = 24
@@ -1282,7 +1284,7 @@ class Game():
 
         focus_str = "Focus: " + str(self.player.focus)
 
-        text6 = font_sm.render(focus_str, 1, YELLOW, pygame.SRCALPHA)
+        text6 = font_sm.render(focus_str, 1, (0, 220, 215), pygame.SRCALPHA)
         rect6 = text6.get_rect()
         rect6.left = (spacing * 5) - (rect6.width / 2)
         rect6.top = 24
@@ -1290,7 +1292,7 @@ class Game():
 
         hearts_str = "Hearts: " + str(self.player.hearts)
 
-        text7 = font_sm.render(hearts_str, 1, YELLOW, pygame.SRCALPHA)
+        text7 = font_sm.render(hearts_str, 1, (255, 44, 44), pygame.SRCALPHA)
         rect7 = text7.get_rect()
         rect7.left = (spacing * 2) - (rect7.width / 2)
         rect7.top = 24
@@ -1298,7 +1300,7 @@ class Game():
 
         high_score_str = "High Score: " + str(self.player.high_score)
 
-        text8 = font_sm.render(high_score_str, 1, YELLOW, pygame.SRCALPHA)
+        text8 = font_sm.render(high_score_str, 1, (255, 220, 81), pygame.SRCALPHA)
         rect8 = text8.get_rect()
         rect8.right = SCREEN_WIDTH - 24
         rect8.top = rect3.bottom + 10
@@ -1391,30 +1393,26 @@ class Game():
                 self.timer -= 1
                 self.timer_count_time = 0
 
-            # Calculate timer-based increase
-            timer_increase = self.rate * (self.initial_time - self.timer)
-
-            # Update anxiety and paranoia based on elapsed time
-            self.player.anxiety = (int)(min(self.max_value_a_p, timer_increase))
-            self.player.paranoia = (int)(min(self.max_value_a_p, timer_increase))
-
-            ''' TODO: WHY TF am I stuck???
-                NOTE: Give up for now. '''
+                self.player.anxiety += int(self.rate)
+                self.player.paranoia += int(self.rate)
 
             # Update focus
             if self.player.focus > 0 and self.player.focus < 101:
                 self.player.focus = (int)(100 - ((self.player.anxiety / 2) + (self.player.paranoia / 2)))
 
             # If any variables are negative, change to 0 before updating display
-            # TODO: can move to own function
             if self.player.score < 0:
                 self.player.score = 0
             if self.player.hearts < 0:
                 self.player.hearts = 0
             if self.player.hearts > 5:
                 self.player.hearts = 5
+            if self.player.anxiety > 100:
+                self.player.anxiety = 100
             if self.player.anxiety < 0:
                 self.player.anxiety = 0
+            if self.player.paranoia > 100:
+                self.player.paranoia = 100
             if self.player.paranoia < 0:
                 self.player.paranoia = 0
             if self.player.focus < 0:
@@ -1455,8 +1453,20 @@ class Game():
         self.level.world.blit(self.level.background1, [bg1_offset_x, bg1_offset_y])
         self.level.world.blit(self.level.background2, [bg2_offset_x, bg2_offset_y])
         self.level.world.blit(self.level.inactive, [0, 0])
-        self.level.world.blit(self.level.active, [0, 0])
-        self.level.world.blit(self.level.foreground, [0, 0])                  
+
+        # Render items
+        for item in self.level.items:
+            self.level.world.blit(item.image, item.rect.topleft)
+
+        # Render player
+        self.level.world.blit(self.player.image, self.player.rect.topleft)
+
+        # Render foreground
+        self.level.world.blit(self.level.foreground, [0, 0])
+
+        # Render enemies
+        for enemy in self.level.enemies:
+            self.level.world.blit(enemy.image, enemy.rect.topleft)
 
         screen.blit(self.level.world, [offset_x, offset_y])
 
