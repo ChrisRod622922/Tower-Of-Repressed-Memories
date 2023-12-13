@@ -1109,6 +1109,9 @@ class Game():
         self.max_value_a_p = 100
     
     def setup(self):
+        # Reset clock
+        self.clock = pygame.time.Clock()
+        
         # Create player
         self.player = Player(player_images)
         self.mc = pygame.sprite.GroupSingle()
