@@ -761,7 +761,6 @@ class RisingLava(pygame.sprite.Sprite):
 
     
     def move(self, timer, initial_time, level):
-        # 234
         # Calculate remaining time
         remaining_time = max(0, initial_time - pygame.time.get_ticks() / 1000)
 

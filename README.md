@@ -11,15 +11,12 @@ Description of game...
 ### Goal
 ...
 
-## Screenshots
-...
-
 ## Backlog
 - First Memory
 - Modularize code
 - Follow ability for Stalker enemy type
 - Screen artifacts when anxiety or paranoia is too high
-- Vertical parallax
+- Vertical parallax & background images
 - Text updates for player status effects
 - Main Menu
 - Restart level on death (once more levels are added)
