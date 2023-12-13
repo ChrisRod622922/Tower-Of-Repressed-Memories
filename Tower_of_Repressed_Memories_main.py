@@ -1,44 +1,9 @@
 # pylint: disable=import-error
 
-''' NOTE:
-          - Game class needs more code moved to dedicated functions!!
-
-          Right now: finish lv1 (new layout -- manually move lava up for now,
-                     try to incorporate all assets), sprites for items, parallax (8 images: change Level class code),
-                     modulalize code/cleanup, end memory revealed, game art/whatever else for turn in...
-                     finish Stalker enemy class, screen effects...
-                     (also have Player/other sprites manually moved x pixels down to reach grass tiles ***)
-                     Fix Player animations if possible (and add Death)...
-                     If time allows, ADD STATUS EFFECT UPDATES (like when collide w/enemy, dir. is reversed, etc.)
-          NOTE: if I run out of time to fix Lava class, change all the update function param. back to normal
-'''
-
-''' TODO (move to .md file in separate module folder. "Backlog" i.e.):
-          1. Add jump and follow ability for Stalkers, then teleport ability
-                --- IN PROGRESS ---
-          2. TITLE SCREEN, FOLLOWED BY SHORT EXPOSITION
-          3. MAJOR BUG: Rising Lava
-             (Try changing math for anxiety/paranoia & try to have them increase at a predetermined rate)
-          6. Add screen effects and artifacts
-          7. Restart current level on death, instead of restarting game
-          8. Add on-screen text updates on all status effects (such as "Speed decreased due to lack of focus!")
-          9. Display actual hearts for Hearts (instead of numbers)
-         10. CLEAN UP CODE / SEPARATE MODULES
-             (Use CTRL+F to find leftover TODO's & print statements)
-'''
-
 ''' TODO: LEVELS (planning):
           1. Escape from rising lava (DEMO GOAL)
           2. Shrinking level (spikes closing in on sides of screen)
-          3. Blocks randomly fall OR there are ice blocks; instakill enemy is simply this
-
-    NOTE:
-        -- Anxiety and paranoia max value = 100
-        -- Player speed now decreased by 25% when focus is below 75 and 50
-        -- To implement Title Screen & exposition, create Stage TITLE, waiting for input SPACE (if no menu).
-           Increment a pages variable to page through exposition (follows Title, SPACE to proceed) until no more
-           pages (can just hard-code #). Then start level init and setup.
-             
+          3. Blocks randomly fall OR there are ice blocks; instakill enemy is simply this  
 '''
 
 # Imports
@@ -312,7 +277,6 @@ class Player(pygame.sprite.Sprite):
             self.vy = level.terminal_velocity
 
     def adrenaline_cooldown(self):
-        print("Speed: " + str(self.speed))
         # Cooldown duration in seconds
         cooldown_time_sec = 3
 
@@ -324,8 +288,6 @@ class Player(pygame.sprite.Sprite):
 
             # Increase player's speed by adrenaline
             self.speed += self.adrenaline
-
-            print("New speed: " + str(self.speed))
 
             # Reset adrenaline timer
             self.adrenaline_timer = (FPS * cooldown_time_sec)
@@ -341,7 +303,6 @@ class Player(pygame.sprite.Sprite):
         for event in pygame.event.get():
             if event.type == pygame.USEREVENT:
                 self.speed = original_speed
-                print("Speed after cooldown: " + str(self.speed))
             
     # Movement and tile collision detection
     def move_and_check_tiles(self, level):
@@ -801,40 +762,6 @@ class RisingLava(pygame.sprite.Sprite):
     
     def move(self, timer, initial_time, level):
         # 234
-        '''
-        # Calculate elapsed time since object created
-        elapsed_time = pygame.time.get_ticks() / 1000 - initial_time
-
-        # Ensure elapsed time is within the timer duration
-        elapsed_time = min(elapsed_time, total_time)
-
-        # Calculate normalized position (0 at the bottom, 1 at the top)
-        normalized_position = elapsed_time / total_time
-
-        # Calculate the new y position as a proportion of the level height
-        level_height_pixels = level.get_height() * level.get_tile_size()
-        proportion = 0.8  # How much of level height object should cover
-        new_y = int(proportion * normalized_position * level_height_pixels)
-        
-        # Debug information
-        print("Height pixels:", level_height_pixels)
-        print("Proportion:", proportion)
-        print("Current rect.y:", self.rect.y)
-        print("Calculated new rect.y:", new_y)
-        print("Calculated new rect.y with max:", max(new_y, SCREEN_HEIGHT - self.rect.height))
-        print("---")
-
-        # Calculate the speed factor (adjust as needed)
-        speed_factor = 0.2  # Adjust this value to control the speed
-
-        # Set new y position, ensuring it doesn't go below the bottom of the screen
-        self.rect.y = max(new_y, SCREEN_HEIGHT - self.rect.height)
-
-        # Apply speed factor
-        self.rect.y = int(self.rect.y * speed_factor)
-        '''
-
-        ''' In main: '''
         # Calculate remaining time
         remaining_time = max(0, initial_time - pygame.time.get_ticks() / 1000)
 
@@ -844,8 +771,6 @@ class RisingLava(pygame.sprite.Sprite):
 
         # Update the position
         self.rect.y -= self.vy * speed * remaining_time
-        
-        
 
     def set_image(self):
         self.image = self.images[0]
@@ -1227,7 +1152,6 @@ class Game():
         self.active_sprites.add(self.player, self.level.items, self.level.enemies)
 
         # Define unkillable object hitbox for level
-        #TODO: will need conditions to load correct unkillable obj hitbox for each level
         self.hitbox = self.level.hitboxes
 
     def start_level(self):
@@ -1470,24 +1394,25 @@ class Game():
                 self.player.anxiety += int(self.rate)
                 self.player.paranoia += int(self.rate)
 
-                # Ensure the values do not exceed the max or min values
-                self.player.anxiety = min(self.max_value_a_p, self.player.anxiety)
-                self.player.paranoia = min(self.max_value_a_p, self.player.paranoia)
-                self.player.anxiety = max(0, self.player.anxiety)
-                self.player.paranoia = max(0, self.player.paranoia)
-
             # Update focus
             if self.player.focus > 0 and self.player.focus < 101:
                 self.player.focus = (int)(100 - ((self.player.anxiety / 2) + (self.player.paranoia / 2)))
 
             # If any variables are negative, change to 0 before updating display
-            # TODO: can move to own function
             if self.player.score < 0:
                 self.player.score = 0
             if self.player.hearts < 0:
                 self.player.hearts = 0
             if self.player.hearts > 5:
                 self.player.hearts = 5
+            if self.player.anxiety > 100:
+                self.player.anxiety = 100
+            if self.player.anxiety < 0:
+                self.player.anxiety = 0
+            if self.player.paranoia > 100:
+                self.player.paranoia = 100
+            if self.player.paranoia < 0:
+                self.player.paranoia = 0
             if self.player.focus < 0:
                 self.player.focus = 0
             if self.player.focus > 100:
