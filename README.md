@@ -1,15 +1,27 @@
 # Tower-Of-Repressed-Memories
-Description of game...
+You are asleep. In your dreams, you are forced to climb ever-taller towers filled with obstacles in order to recover repressed memories. These may be the key to understanding what is causing your anxiety and paranoia. At the end, will you succeed, or fall into despair?
 
 ## How to Play
+
 ### Controls
-...
+Players move the protagonist using the left, right, and up arrow keys. The ‘p’ key can also be used to pause the game. The ‘r’ key can be used to restart the game. The SPACEBAR is typically used to advance the game on a prompt.
+
+### Mechanics
+Colliding with enemies will deduct 1-2 Hearts from the Player’s health and increase anxiety or paranoia by 5. If you are unable to enter the door at the top of the level within the time limit, the game is over. Likewise, if you collide with a deadly obstacle (such as lava), the game is over.
+
 ### Enemies
-...
+
+# Terror
+Ghost like apparitions that steal 1 Heart from the player. They are bound to their own platform.
+
+# Mind Slime
+Large slime monsters that steal 2 Hearts from the player. They can only move in one direction and can fall off of platforms.
+
+# Stalker
+Huge terrifying monsters that steal 2 Hearts from the player. They are faster than other enemies, but are restricted to their own platform. They also have the ability to jump and follow the player (WIP).
+
 ### Points
-...
-### Goal
-...
+Points can be earned by collecting gems (yellow), which add 100 points to your score. Anxiety and paranoia can be reduced by colliding with Anxiety Orbs (blue) and Paranoia Orbs (green), whereas health can be restored with Healing Orbs (red). Anxiety Orbs and Paranoia Orbs also gift the player 25 points. Healing Orbs gift the player 50 points, too. Anxiety Orbs and Paranoia Orbs reduce anxiety and paranoia by 10, respectively, while Healing Orbs restore 1 Heart.
 
 ## Backlog
 - First Memory
