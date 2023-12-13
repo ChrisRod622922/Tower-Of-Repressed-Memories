@@ -54,13 +54,13 @@ Points can be earned by collecting gems (yellow), which add 100 points to your s
 - Dream Journal (accessed from Main Menu)
 
 ## Credits
-Free tile assets by PR GAMES & APPS (downloaded from opengameart.org). 
-Background images by Old_Ape (downloaded from opengameart.org). 
-Chaos sprites (Terror assets) by EmeraldActivities.com, http://opengameart.org/users/emerald. 
-Slime sprites by Fleurman (downloaded from opengameart.org). 
-Stalker sprites by Gilgaphoenixignis (downloaded from opengameart.org). 
-Protagonist sprites by Penzilla from itch.io (https://penzilla.itch.io/hooded-protagonist). 
-Orb sprites by Amon from opengameart.org (www.amon.co). 
+<p>Free tile assets by PR GAMES & APPS (downloaded from opengameart.org). <br>
+Background images by Old_Ape (downloaded from opengameart.org). <br>
+Chaos sprites (Terror assets) by EmeraldActivities.com, http://opengameart.org/users/emerald. <br>
+Slime sprites by Fleurman (downloaded from opengameart.org). <br>
+Stalker sprites by Gilgaphoenixignis (downloaded from opengameart.org). <br>
+Protagonist sprites by Penzilla from itch.io (https://penzilla.itch.io/hooded-protagonist). <br>
+Orb sprites by Amon from opengameart.org (www.amon.co). </p>
 
-Sound effects from opengameart.org. 
-Original music created in GarageBand for MacOS. 
+<p>Sound effects from opengameart.org. <br>
+Original music created in GarageBand for MacOS. </p>
